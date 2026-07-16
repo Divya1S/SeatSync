@@ -1,0 +1,164 @@
+name: seatsync
+
+x-java-env: &java-env
+  LOG_FORMAT: ecs
+  JWT_SECRET: ${JWT_SECRET:-seatsync-dev-secret-change-me-0123456789abcdef}
+  SPRING_DATA_REDIS_HOST: redis
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: seatsync
+      POSTGRES_PASSWORD: seatsync
+      POSTGRES_DB: seatsync
+    ports: ["5432:5432"]
+    volumes:
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seatsync -d seatsync_booking"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  kafka:
+    image: apache/kafka:3.9.0
+    ports: ["29092:29092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["1025:1025", "8025:8025"]
+
+  zipkin:
+    image: openzipkin/zipkin:3
+    ports: ["9411:9411"]
+
+  auth-service:
+    build: ./auth-service
+    ports: ["8081:8081"]
+    environment:
+      <<: *java-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_auth
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck: &java-health
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/$${SERVER_PORT:-8081}' 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  catalog-service:
+    build: ./catalog-service
+    ports: ["8082:8082"]
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8082"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_catalog
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck: *java-health
+
+  booking-service:
+    build: ./booking-service
+    ports: ["8083:8083"]
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8083"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_booking
+      CATALOG_BASE_URL: http://catalog-service:8082
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    healthcheck: *java-health
+
+  notification-service:
+    build: ./notification-service
+    ports: ["8084:8084"]
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8084"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_notification
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: "1025"
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    healthcheck: *java-health
+
+  ai-concierge-service:
+    build: ./ai-concierge-service
+    ports: ["8085:8085"]
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8085"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_ai
+      CATALOG_BASE_URL: http://catalog-service:8082
+      BOOKING_BASE_URL: http://booking-service:8083
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck: *java-health
+
+  api-gateway:
+    build: ./api-gateway
+    ports: ["8080:8080"]
+    environment:
+      <<: *java-env
+      AUTH_URI: http://auth-service:8081
+      CATALOG_URI: http://catalog-service:8082
+      BOOKING_URI: http://booking-service:8083
+      NOTIFICATION_URI: http://notification-service:8084
+      CONCIERGE_URI: http://ai-concierge-service:8085
+    depends_on:
+      redis: { condition: service_healthy }
+      auth-service: { condition: service_healthy }
+      catalog-service: { condition: service_healthy }
+      booking-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080' 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    ports: ["4200:80"]
+    depends_on:
+      api-gateway: { condition: service_healthy }
+
+volumes:
+  pgdata:
