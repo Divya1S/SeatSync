@@ -1,16 +1,9 @@
 # SeatSync
 
 **A real-time booking platform where many concurrent users compete for
-limited-capacity seats — concerts, campus events, workshops, rec-league games —
+limited-capacity seats: concerts, campus events, workshops, rec-league games —
 and no seat is ever sold twice.**
 
-![CI](https://github.com/OWNER/seatsync/actions/workflows/ci.yml/badge.svg)
-
-- 🌐 **Live demo:** run locally in one command — `docker compose up --build`
-  (see [Quick start](#quick-start)); a hosted demo link can be added once
-  deployed.
-
----
 
 ## 1. The problem: overselling
 
