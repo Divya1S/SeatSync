@@ -116,8 +116,7 @@ deliberately and documented here as part of the deliverable:
   the chat UI, not hidden in logs.
 - **Human escalation over hallucination.** Low confidence, missing context,
   failed tools, or a missing/broken model API all produce the same honest
-  outcome: *"I'm not sure — contact support@seatsync.local"* with
-  `escalatedToHuman: true`, rendered distinctly in the widget.
+  outcome: * `escalatedToHuman: true`, rendered distinctly in the widget.
 - **Fail closed, degrade gracefully.** No `OPENAI_API_KEY`? The service boots,
   health stays green, and users get the human-contact message. An AI outage
   can never break the booking path.
