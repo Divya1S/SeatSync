@@ -6,8 +6,6 @@ and no seat is ever sold twice.**
 
 ![CI](https://github.com/OWNER/seatsync/actions/workflows/ci.yml/badge.svg)
 
-- 🎬 **Walkthrough video (2–3 min):** _TODO: link after recording (script in
-  [docs/video-script.md](docs/video-script.md))_
 - 🌐 **Live demo:** run locally in one command — `docker compose up --build`
   (see [Quick start](#quick-start)); a hosted demo link can be added once
   deployed.
