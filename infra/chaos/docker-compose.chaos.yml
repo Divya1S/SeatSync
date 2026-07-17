@@ -1,0 +1,14 @@
+# Chaos overlay for the kill-the-node test (docs/chaos-and-availability.md).
+#
+#   docker compose -f docker-compose.yml -f infra/chaos/docker-compose.chaos.yml \
+#     up -d --scale booking-service=2
+#   python3 infra/chaos/kill_node_test.py
+#
+# - removes booking-service's host port so two replicas can run (gateway
+#   reaches them via in-network DNS; external traffic keeps using :8080)
+# - shortens the hold TTL so orphaned-hold expiry is observable in seconds
+services:
+  booking-service:
+    ports: !reset []
+    environment:
+      HOLD_TTL: PT20S

@@ -1,0 +1,12 @@
+{
+  "type": "WaitlistOffered",
+  "messageId": "36e58a97-4ca3-475d-b56e-365ba1ea10db",
+  "holdId": "bd0a16be-0748-4f3e-8b18-71c67969d068",
+  "eventId": "9d1b091b-e774-42b5-b50b-63ea3f066fd1",
+  "eventName": "Friday Night Jazz",
+  "seatId": "A-1-2",
+  "userId": "00000000-0000-0000-0000-000000000003",
+  "userEmail": "attendee@seatsync.local",
+  "offerExpiresAt": "2026-07-16T22:16:48.247609635Z",
+  "occurredAt": "2026-07-16T22:06:48.247782385Z"
+}

@@ -1,0 +1,104 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: "http://localhost:4200"
+                allowed-methods: "*"
+                allowed-headers: "*"
+                exposed-headers: "Idempotency-Replayed"
+                allow-credentials: true
+                max-age: 3600
+          routes:
+            - id: auth-service
+              uri: ${AUTH_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:20}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
+            - id: catalog-service
+              uri: ${CATALOG_URI:http://localhost:8082}
+              predicates:
+                - Path=/api/catalog/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:20}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
+            - id: booking-service
+              uri: ${BOOKING_URI:http://localhost:8083}
+              predicates:
+                - Path=/api/holds/**,/api/bookings/**,/api/events/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:20}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
+            # WebSocket route: same booking backend, NO rate limiter (gateway
+            # upgrades http -> ws automatically for websocket requests).
+            - id: booking-service-ws
+              uri: ${BOOKING_URI:http://localhost:8083}
+              predicates:
+                - Path=/ws/**
+            - id: notification-service
+              uri: ${NOTIFICATION_URI:http://localhost:8084}
+              predicates:
+                - Path=/api/notifications/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:20}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
+            - id: ai-concierge-service
+              uri: ${CONCIERGE_URI:http://localhost:8085}
+              predicates:
+                - Path=/api/concierge/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:20}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
+
+jwt:
+  secret: ${JWT_SECRET:seatsync-dev-secret-change-me-0123456789abcdef}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${MANAGEMENT_ZIPKIN_TRACING_ENDPOINT:http://localhost:9411/api/v2/spans}
+
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMAT:}

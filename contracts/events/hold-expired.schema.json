@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seatsync.local/contracts/events/hold-expired.schema.json",
+  "title": "HoldExpired",
+  "description": "Emitted by booking-service (via the transactional outbox) when the sweeper expires a seat hold. Topic: seatsync.hold.expired. Delivery: at-least-once; consumers dedupe on messageId.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "HoldExpired"
+    },
+    "messageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique per emission (outbox row id); consumer dedupe key"
+    },
+    "holdId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Catalog event id (also the Kafka message key)"
+    },
+    "eventName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seatId": {
+      "type": "string",
+      "pattern": "^.+-.+-[0-9]+$"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userEmail": {
+      "type": "string",
+      "pattern": "^[^@\\s]+@[^@\\s]+$",
+      "description": "Recipient address (sandbox domains like .local are valid here)"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "type",
+    "messageId",
+    "holdId",
+    "eventId",
+    "eventName",
+    "seatId",
+    "userId",
+    "userEmail",
+    "occurredAt"
+  ],
+  "additionalProperties": true
+}

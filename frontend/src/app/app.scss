@@ -1,0 +1,44 @@
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 8px;
+}
+
+.app-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.app-nav {
+  margin-left: 24px;
+  display: flex;
+  gap: 4px;
+}
+
+.active-link {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-menu-header {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  padding: 8px 16px;
+  max-width: 280px;
+}
+
+.app-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}

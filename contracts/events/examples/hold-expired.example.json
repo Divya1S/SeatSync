@@ -1,0 +1,11 @@
+{
+  "type": "HoldExpired",
+  "messageId": "5b2f6f3a-9a41-4b3c-8d2e-7c1a2b3c4d5e",
+  "holdId": "bd0a16be-0748-4f3e-8b18-71c67969d068",
+  "eventId": "9d1b091b-e774-42b5-b50b-63ea3f066fd1",
+  "eventName": "Friday Night Jazz",
+  "seatId": "B-2-7",
+  "userId": "00000000-0000-0000-0000-000000000003",
+  "userEmail": "attendee@seatsync.local",
+  "occurredAt": "2026-07-16T22:11:48.100000000Z"
+}

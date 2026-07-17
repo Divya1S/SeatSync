@@ -1,0 +1,48 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <a routerLink="/" class="app-title">
+    <mat-icon>event_seat</mat-icon>
+    <span>SeatSync</span>
+  </a>
+
+  <nav class="app-nav">
+    <a mat-button routerLink="/events" routerLinkActive="active-link">Events</a>
+    @if (auth.isLoggedIn()) {
+      <a mat-button routerLink="/my-bookings" routerLinkActive="active-link">My bookings</a>
+    }
+    @if (auth.isOrganizer()) {
+      <a mat-button routerLink="/organizer" routerLinkActive="active-link">Organizer</a>
+    }
+  </nav>
+
+  <span class="spacer"></span>
+
+  @if (auth.currentUser(); as user) {
+    <button mat-button [matMenuTriggerFor]="userMenu" class="user-button">
+      <mat-icon>account_circle</mat-icon>
+      {{ user.fullName }}
+    </button>
+    <mat-menu #userMenu="matMenu">
+      <div class="user-menu-header">{{ user.email }} — {{ user.roles.join(', ') }}</div>
+      <button mat-menu-item routerLink="/my-bookings">
+        <mat-icon>confirmation_number</mat-icon>
+        My bookings
+      </button>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Log out
+      </button>
+    </mat-menu>
+  } @else {
+    <button mat-button (click)="goLogin()">
+      <mat-icon>login</mat-icon>
+      Log in
+    </button>
+    <a mat-stroked-button routerLink="/register">Register</a>
+  }
+</mat-toolbar>
+
+<main class="app-content">
+  <router-outlet />
+</main>
+
+<app-concierge-widget />

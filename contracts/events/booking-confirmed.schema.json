@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seatsync.local/contracts/events/booking-confirmed.schema.json",
+  "title": "BookingConfirmed",
+  "description": "Emitted by booking-service (via the transactional outbox) when a seat booking commits. Topic: seatsync.booking.confirmed. Delivery: at-least-once; consumers dedupe on messageId.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "BookingConfirmed"
+    },
+    "messageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique per emission (outbox row id); consumer dedupe key"
+    },
+    "bookingId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Catalog event id (also the Kafka message key)"
+    },
+    "eventName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seatId": {
+      "type": "string",
+      "pattern": "^.+-.+-[0-9]+$",
+      "description": "<section>-<row>-<number>"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userEmail": {
+      "type": "string",
+      "pattern": "^[^@\\s]+@[^@\\s]+$",
+      "description": "Recipient address (sandbox domains like .local are valid here)"
+    },
+    "price": {
+      "type": "number",
+      "minimum": 0
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "type",
+    "messageId",
+    "bookingId",
+    "eventId",
+    "eventName",
+    "seatId",
+    "userId",
+    "userEmail",
+    "price",
+    "occurredAt"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seatsync.local/contracts/events/waitlist-offered.schema.json",
+  "title": "WaitlistOffered",
+  "description": "Emitted by booking-service (via the transactional outbox) when a freed seat is offered to the oldest waitlist entry. The offer is backed by a real 10-minute hold (holdId) owned by the offeree. Topic: seatsync.waitlist.offered. Delivery: at-least-once; consumers dedupe on messageId.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "WaitlistOffered"
+    },
+    "messageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique per emission (outbox row id); consumer dedupe key"
+    },
+    "holdId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The system-created offer hold reserving the seat for the offeree"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Catalog event id (also the Kafka message key)"
+    },
+    "eventName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seatId": {
+      "type": "string",
+      "pattern": "^.+-.+-[0-9]+$"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userEmail": {
+      "type": "string",
+      "pattern": "^[^@\\s]+@[^@\\s]+$",
+      "description": "Recipient address (sandbox domains like .local are valid here)"
+    },
+    "offerExpiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "type",
+    "messageId",
+    "holdId",
+    "eventId",
+    "eventName",
+    "seatId",
+    "userId",
+    "userEmail",
+    "offerExpiresAt",
+    "occurredAt"
+  ],
+  "additionalProperties": true
+}

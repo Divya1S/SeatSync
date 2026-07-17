@@ -1,0 +1,71 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: ai-concierge-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/seatsync_ai}
+    username: ${SPRING_DATASOURCE_USERNAME:seatsync}
+    password: ${SPRING_DATASOURCE_PASSWORD:seatsync}
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:sk-dummy-offline}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+          temperature: 0.2
+      embedding:
+        options:
+          model: text-embedding-3-small
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        dimensions: 1536
+
+concierge:
+  catalog-base-url: ${CATALOG_BASE_URL:http://localhost:8082}
+  booking-base-url: ${BOOKING_BASE_URL:http://localhost:8083}
+
+seatsync:
+  jwt:
+    secret: ${JWT_SECRET:seatsync-dev-secret-change-me-0123456789abcdef}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      llm:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+      downstream:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 4
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${MANAGEMENT_ZIPKIN_TRACING_ENDPOINT:http://localhost:9411/api/v2/spans}
+
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMAT:}

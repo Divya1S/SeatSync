@@ -1,0 +1,385 @@
+{
+  "consumer": {
+    "name": "ai-concierge-service"
+  },
+  "interactions": [
+    {
+      "comments": {
+        "testname": "com.seatsync.concierge.contracts.ConciergeCatalogPactTest.eventDetailsReadsTheFullEventShape(MockServer)",
+        "text": [
+
+        ]
+      },
+      "description": "a request for an existing event by id",
+      "key": "7665b4bc",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "an event exists",
+          "params": {
+            "eventId": "b7f4a9d2-3c61-48e5-9f0a-2d8c5b7e1a3f"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/catalog/events/b7f4a9d2-3c61-48e5-9f0a-2d8c5b7e1a3f"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "category": "CONCERT",
+            "description": "Smooth jazz to close out the week",
+            "endsAt": "2026-07-24T23:00:00Z",
+            "id": "b7f4a9d2-3c61-48e5-9f0a-2d8c5b7e1a3f",
+            "name": "Friday Night Jazz",
+            "organizerId": "00000000-0000-0000-0000-000000000002",
+            "priceFrom": 25.0,
+            "priceTo": 99.0,
+            "startsAt": "2026-07-24T20:00:00Z",
+            "status": "PUBLISHED",
+            "totalSeats": 100,
+            "venue": {
+              "address": "Main St 1",
+              "city": "Berlin",
+              "id": "4e9d8c7b-6a51-4f3e-b2d1-0c9e8f7a6b5c",
+              "name": "Grand Hall"
+            }
+          },
+          "contentType": "application/json; charset=UTF-8",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json; charset=UTF-8"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.category": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "CONCERT|WORKSHOP|SPORTS|CAMPUS|OTHER"
+                }
+              ]
+            },
+            "$.description": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.endsAt": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z"
+                }
+              ]
+            },
+            "$.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.organizerId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.priceFrom": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.priceTo": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.startsAt": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z"
+                }
+              ]
+            },
+            "$.status": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "DRAFT|PUBLISHED|CANCELLED"
+                }
+              ]
+            },
+            "$.totalSeats": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.venue.address": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.venue.city": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.venue.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.venue.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json(;\\s?charset=[\\w\\-]+)?"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "transport": "http",
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "testname": "com.seatsync.concierge.contracts.ConciergeCatalogPactTest.missingEventIsMappedToNotFoundAnswer(MockServer)",
+        "text": [
+
+        ]
+      },
+      "description": "a request for a missing event by id",
+      "key": "e9375928",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "event does not exist",
+          "params": {
+            "eventId": "de1e7ed0-a2b4-4c6d-8e0f-1a3b5c7d9e0f"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/catalog/events/de1e7ed0-a2b4-4c6d-8e0f-1a3b5c7d9e0f"
+      },
+      "response": {
+        "status": 404
+      },
+      "transport": "http",
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "testname": "com.seatsync.concierge.contracts.ConciergeCatalogPactTest.searchEventsSendsAllFiltersAndReadsThePage(MockServer)",
+        "text": [
+
+        ]
+      },
+      "description": "a search for published events with blank q, city and category filters",
+      "key": "affafc7f",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "published events exist"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/catalog/events",
+        "query": {
+          "category": [
+            ""
+          ],
+          "city": [
+            ""
+          ],
+          "q": [
+            ""
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "content": {
+            "content": [
+              {
+                "id": "b7f4a9d2-3c61-48e5-9f0a-2d8c5b7e1a3f",
+                "name": "Friday Night Jazz",
+                "priceFrom": 25.0,
+                "startsAt": "2026-07-24T20:00:00Z",
+                "venue": {
+                  "city": "Berlin",
+                  "name": "Grand Hall"
+                }
+              }
+            ],
+            "totalElements": 1
+          },
+          "contentType": "application/json; charset=UTF-8",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json; charset=UTF-8"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.content": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.content[*].id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.content[*].name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.content[*].priceFrom": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.content[*].startsAt": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z"
+                }
+              ]
+            },
+            "$.content[*].venue.city": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.content[*].venue.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.totalElements": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json(;\\s?charset=[\\w\\-]+)?"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "transport": "http",
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.7.3"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "catalog-service"
+  }
+}

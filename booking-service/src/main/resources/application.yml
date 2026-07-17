@@ -1,0 +1,96 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: booking-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/seatsync_booking}
+    username: ${SPRING_DATASOURCE_USERNAME:seatsync}
+    password: ${SPRING_DATASOURCE_PASSWORD:seatsync}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      retries: 1
+      properties:
+        spring.json.add.type.headers: false
+        max.block.ms: 2000
+        delivery.timeout.ms: 5000
+        request.timeout.ms: 3000
+    admin:
+      properties:
+        request.timeout.ms: 5000
+        default.api.timeout.ms: 5000
+  cloud:
+    openfeign:
+      client:
+        config:
+          catalog:
+            connect-timeout: 2000
+            read-timeout: 3000
+
+jwt:
+  secret: ${JWT_SECRET:seatsync-dev-secret-change-me-0123456789abcdef}
+
+# Hold/offer lifetimes (conventions 8.1). Redis PX and DB expires_at both
+# derive from these; ISO-8601 durations (PT5M) or simple forms (5m) bind.
+booking:
+  hold-ttl: ${HOLD_TTL:PT5M}
+  offer-ttl: ${OFFER_TTL:PT10M}
+
+catalog:
+  base-url: ${CATALOG_BASE_URL:http://localhost:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${MANAGEMENT_ZIPKIN_TRACING_ENDPOINT:http://localhost:9411/api/v2/spans}
+
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMAT:}
+
+# NOTE: the former "kafka-publish" circuit breaker is gone — the request path
+# no longer touches Kafka (transactional outbox); the OutboxRelay retries
+# forever and relies on the fail-fast producer properties above.
+resilience4j:
+  circuitbreaker:
+    instances:
+      catalog:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        ignore-exceptions:
+          - feign.FeignException$FeignClientException
+  retry:
+    instances:
+      catalog:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        ignore-exceptions:
+          - feign.FeignException$FeignClientException

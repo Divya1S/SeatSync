@@ -1,0 +1,123 @@
+{
+  "consumer": {
+    "name": "ai-concierge-service"
+  },
+  "interactions": [
+    {
+      "comments": {
+        "testname": "com.seatsync.concierge.contracts.ConciergeBookingPactTest.seatAvailabilityIsSummarizedToCounts(MockServer)",
+        "text": [
+
+        ]
+      },
+      "description": "an anonymous request for the live seat view of an event",
+      "key": "9f00ea83",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "an event with seat inventory exists",
+          "params": {
+            "eventId": "b7f4a9d2-3c61-48e5-9f0a-2d8c5b7e1a3f"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/events/b7f4a9d2-3c61-48e5-9f0a-2d8c5b7e1a3f/seats"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "eventId": "b7f4a9d2-3c61-48e5-9f0a-2d8c5b7e1a3f",
+            "seats": [
+              {
+                "mine": false,
+                "seatId": "A-1-1",
+                "status": "AVAILABLE"
+              }
+            ]
+          },
+          "contentType": "application/json; charset=UTF-8",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json; charset=UTF-8"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.seats": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.seats[*].mine": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.seats[*].seatId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[A-Za-z0-9]+-[A-Za-z0-9]+-\\d+"
+                }
+              ]
+            },
+            "$.seats[*].status": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "AVAILABLE|HELD|BOOKED"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json(;\\s?charset=[\\w\\-]+)?"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "transport": "http",
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.7.3"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "booking-service"
+  }
+}

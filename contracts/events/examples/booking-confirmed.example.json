@@ -1,0 +1,12 @@
+{
+  "type": "BookingConfirmed",
+  "messageId": "cccd4c29-8816-44e9-951e-96125ef982da",
+  "bookingId": "59e62354-ed72-47f4-ac16-0d41e8c66163",
+  "eventId": "9d1b091b-e774-42b5-b50b-63ea3f066fd1",
+  "eventName": "Friday Night Jazz",
+  "seatId": "A-1-2",
+  "userId": "00000000-0000-0000-0000-000000000003",
+  "userEmail": "attendee@seatsync.local",
+  "price": 45.0,
+  "occurredAt": "2026-07-16T22:06:48.275171093Z"
+}

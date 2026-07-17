@@ -1,0 +1,43 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/seatsync_auth}
+    username: ${SPRING_DATASOURCE_USERNAME:seatsync}
+    password: ${SPRING_DATASOURCE_PASSWORD:seatsync}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+seatsync:
+  jwt:
+    secret: ${JWT_SECRET:seatsync-dev-secret-change-me-0123456789abcdef}
+    access-ttl-seconds: 900
+    refresh-ttl-seconds: 604800
+  seed:
+    admin-password: ${ADMIN_PASSWORD:admin123!}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${MANAGEMENT_ZIPKIN_TRACING_ENDPOINT:http://localhost:9411/api/v2/spans}
+
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMAT:}

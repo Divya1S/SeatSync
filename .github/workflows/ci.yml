@@ -31,6 +31,11 @@ jobs:
       - name: Build & test
         working-directory: ${{ matrix.service }}
         run: ./mvnw -B -ntp verify
+      # Mutation testing gates the invariant-enforcing code only (CONVENTIONS §8.1)
+      - name: PIT mutation testing (booking domain)
+        if: matrix.service == 'booking-service'
+        working-directory: booking-service
+        run: ./mvnw -B -ntp -Ppit org.pitest:pitest-maven:mutationCoverage
 
   frontend:
     runs-on: ubuntu-latest
@@ -46,10 +51,44 @@ jobs:
         run: npm ci
       - name: Test
         working-directory: frontend
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+        run: npm test
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate example payloads against event schemas
+        run: |
+          pip install --quiet jsonschema
+          python - <<'EOF'
+          import json, pathlib, sys
+          from jsonschema import Draft202012Validator
+          fails = 0
+          for schema_path in sorted(pathlib.Path("contracts/events").glob("*.schema.json")):
+              schema = json.loads(schema_path.read_text())
+              Draft202012Validator.check_schema(schema)
+              example = pathlib.Path("contracts/events/examples") / schema_path.name.replace(".schema.json", ".example.json")
+              errors = list(Draft202012Validator(schema).iter_errors(json.loads(example.read_text())))
+              status = "OK  " if not errors else "FAIL"
+              print(f"{status} {example.name}")
+              for e in errors:
+                  print(f"     - {e.message}"); fails += 1
+          sys.exit(1 if fails else 0)
+          EOF
+      - name: Reject backward-incompatible schema changes (PRs)
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
+          echo "Comparing schemas against merge-base $BASE"
+          python .github/scripts/check_schema_compat.py "$BASE"
 
   docker-images:
     runs-on: ubuntu-latest

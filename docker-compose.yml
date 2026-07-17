@@ -48,7 +48,11 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # auto-create OFF: an early consumer subscription on a pristine broker
+      # would otherwise create the topics with 1 partition before KafkaAdmin
+      # raises them to 3, stranding keyed messages outside the consumer's
+      # generation-1 assignment until a metadata refresh (~5 min)
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
       interval: 10s
@@ -65,7 +69,9 @@ services:
 
   auth-service:
     build: ./auth-service
-    ports: ["8081:8081"]
+    # host 18081 (not 8081) to avoid colliding with common local dev servers;
+    # in-network address stays auth-service:8081
+    ports: ["18081:8081"]
     environment:
       <<: *java-env
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_auth
@@ -85,6 +91,8 @@ services:
       <<: *java-env
       SERVER_PORT: "8082"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_catalog
+      # set false to bypass the Redis cache-aside layer (load-test baseline)
+      CATALOG_CACHE_ENABLED: ${CATALOG_CACHE_ENABLED:-true}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -127,7 +135,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_ai
       CATALOG_BASE_URL: http://catalog-service:8082
       BOOKING_BASE_URL: http://booking-service:8083
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # placeholder keeps the service booting in graceful offline mode;
+      # pass a real key (OPENAI_API_KEY=sk-... docker compose up) to enable AI
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-dummy-offline}
     depends_on:
       postgres: { condition: service_healthy }
     healthcheck: *java-health
@@ -137,6 +147,9 @@ services:
     ports: ["8080:8080"]
     environment:
       <<: *java-env
+      # per-IP rate limiting knobs (requests/sec, burst) — raise for load testing
+      RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-20}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-40}
       AUTH_URI: http://auth-service:8081
       CATALOG_URI: http://catalog-service:8082
       BOOKING_URI: http://booking-service:8083
@@ -156,7 +169,7 @@ services:
 
   frontend:
     build: ./frontend
-    ports: ["4200:80"]
+    ports: ["4200:4200"]
     depends_on:
       api-gateway: { condition: service_healthy }
 

@@ -25,5 +25,8 @@ npm-debug.log*
 .env
 *.local.env
 
+# Local assistant/tool config — never publish
+.claude/
+
 # Logs
 *.log
