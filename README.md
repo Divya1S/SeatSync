@@ -20,8 +20,7 @@ survive.
 ## 2. Architecture
 
 Six Spring Boot services behind a gateway, one Angular SPA, and three pieces
-of infrastructure (Postgres, Redis, Kafka). Full diagrams + sequence flows in
-[docs/architecture.md](docs/architecture.md).
+of infrastructure (Postgres, Redis, Kafka).
 
 ```
 Angular SPA ──REST/WS──▶ api-gateway (JWT @ edge, per-IP rate limit)
