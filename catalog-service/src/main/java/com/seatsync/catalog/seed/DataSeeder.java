@@ -28,7 +28,7 @@ import java.util.UUID;
 
 /**
  * Idempotent demo seed (CONVENTIONS §6.2): runs only when the venues table is empty.
- * The demo organizer UUID is fixed by convention — auth-service seeds
+ * The demo organizer UUID is fixed by convention; auth-service seeds
  * organizer@seatsync.local with exactly this id.
  */
 @Component

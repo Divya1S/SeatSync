@@ -33,6 +33,7 @@ import java.util.UUID;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
+    static final String ISSUER = "seatsync-auth";
 
     private final SecretKey key;
 
@@ -47,7 +48,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
-                Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+                Claims claims = Jwts.parser().verifyWith(key).requireIssuer(ISSUER).build()
+                        .parseSignedClaims(token).getPayload();
                 if (!"access".equals(claims.get("typ", String.class))) {
                     throw new IllegalArgumentException("Not an access token");
                 }

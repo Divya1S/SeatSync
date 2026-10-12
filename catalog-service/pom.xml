@@ -203,12 +203,13 @@
                   <element>BUNDLE</element>
                   <limits>
                     <!-- §8.1: honestly-measured merged line coverage rounded
-                         DOWN to the nearest 5% — a ratchet, not a target.
+                         DOWN to the nearest 5%, a ratchet, not a target.
                          Measured 2026-07-16: 84.76% line (406/479). -->
                     <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.80</minimum>
+                      <!-- Re-measured 2026-10-11 (audit): 86.9% line -> ratcheted 0.80 to 0.85. -->
+                      <minimum>0.85</minimum>
                     </limit>
                   </limits>
                 </rule>

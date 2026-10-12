@@ -24,9 +24,15 @@ import java.util.UUID;
  * 2. seat must be AVAILABLE (else 409),
  * 3. idempotent replay: if the caller already owns the active hold on this seat,
  *    return it ({@code created=false} -> HTTP 200) instead of a self-inflicted 409,
- * 4. atomic Redis claim SET NX PX {@code booking.hold-ttl} (else 409),
- * 5. persist the hold row (expires_at = now + {@code booking.hold-ttl}) and
+ * 4. per-user cap: no more than {@code booking.max-active-holds-per-user} active
+ *    holds on one event (else 409),
+ * 5. atomic Redis claim SET NX PX {@code booking.hold-ttl} (else 409),
+ * 6. persist the hold row (expires_at = now + {@code booking.hold-ttl}) and
  *    broadcast HELD over STOMP (via the Redis fanout bridge).
+ *
+ * <p>Anything that fails after the Redis claim succeeded releases the key again
+ * (compensation), so a database hiccup can never leave a phantom claim that
+ * blocks the seat for the rest of the TTL.
  */
 @Service
 public class HoldService {
@@ -79,6 +85,14 @@ public class HoldService {
             throw ApiException.conflict("Seat " + seatId + " is already held");
         }
 
+        int maxActive = bookingProperties.maxActiveHoldsPerUser();
+        long activeForUser = holdRepository.countByUserIdAndEventIdAndStatusAndExpiresAtAfter(
+                user.id(), eventId, HoldStatus.HELD, now);
+        if (activeForUser >= maxActive) {
+            throw ApiException.conflict("Active hold limit of " + maxActive
+                    + " reached for this event; confirm or release a hold first");
+        }
+
         UUID holdId = UUID.randomUUID();
         // Redis PX and DB expires_at derive from the SAME configured TTL.
         Duration holdTtl = bookingProperties.holdTtl();
@@ -87,19 +101,24 @@ public class HoldService {
             throw ApiException.conflict("Seat " + seatId + " is already held");
         }
 
-        // Re-check AFTER the claim: the previous hold on this seat may have been
-        // confirmed (seat BOOKED, Redis key deleted post-commit) between our first
-        // read and the SET NX. Without this, a stale reader could hold a sold seat.
-        SeatInventory current = seatInventoryRepository.findByEventIdAndSeatId(eventId, seatId)
-                .orElse(null);
-        if (current == null || current.getStatus() != SeatStatus.AVAILABLE) {
-            redisHoldStore.release(eventId, seatId);
-            throw ApiException.conflict("Seat " + seatId + " is already booked");
-        }
+        try {
+            // Re-check AFTER the claim: the previous hold on this seat may have been
+            // confirmed (seat BOOKED, Redis key deleted post-commit) between our first
+            // read and the SET NX. Without this, a stale reader could hold a sold seat.
+            SeatInventory current = seatInventoryRepository.findByEventIdAndSeatId(eventId, seatId)
+                    .orElse(null);
+            if (current == null || current.getStatus() != SeatStatus.AVAILABLE) {
+                throw ApiException.conflict("Seat " + seatId + " is already booked");
+            }
 
-        Hold hold = new Hold(holdId, eventId, seatId, user.id(), user.email(),
-                HoldStatus.HELD, seat.getPrice(), expiresAt, now);
-        holdRepository.save(hold);
+            Hold hold = new Hold(holdId, eventId, seatId, user.id(), user.email(),
+                    HoldStatus.HELD, seat.getPrice(), expiresAt, now);
+            holdRepository.save(hold);
+        } catch (RuntimeException e) {
+            // Compensation: the claim must not outlive a hold that was never persisted.
+            redisHoldStore.release(eventId, seatId);
+            throw e;
+        }
         broadcaster.seatHeld(eventId, seatId);
         return new HoldResult(
                 new HoldResponse(holdId, eventId, seatId, user.id(), expiresAt, HoldStatus.HELD.name()),

@@ -7,15 +7,15 @@ Prereq:
       up -d --build --scale booking-service=2
   (wait for health; the chaos overlay sets HOLD_TTL=PT20S and unbinds :8083)
 
-Asserts (correctness — must ALWAYS hold):
+Asserts (correctness; must always hold):
   A. no seat has more than one CONFIRMED booking
   B. confirmed bookings never exceed seat capacity
   C. every HELD hold expires: no HELD row remains past TTL + sweep grace
      (orphans created by the killed replica are swept by the survivor)
   D. no outbox row stays unpublished (the survivor's relay picks up rows
-     the dead replica claimed — SKIP LOCKED locks die with its connections)
+     the dead replica claimed; SKIP LOCKED locks die with its connections)
 Availability MAY degrade during failover (5xx while the gateway's connection
-pool drains to the dead IP) — recorded and reported, not asserted.
+pool drains to the dead IP); recorded and reported, not asserted.
 """
 import concurrent.futures
 import json
@@ -97,12 +97,12 @@ def main():
     s, sm = req("GET", f"/api/catalog/events/{event_id}/seatmap")
     seat_ids = [x["seatId"] for sec in sm["sections"] for r in sec["rows"] for x in r["seats"]]
     capacity = len(seat_ids)
-    print(f"   event {event['name']} — {capacity} seats, {USERS} users, "
+    print(f"   event {event['name']}: {capacity} seats, {USERS} users, "
           f"{STORM_SECONDS}s storm, SIGKILL at t+{KILL_AT}s")
 
     replicas = subprocess.run(["docker", "compose", "ps", "-q", "booking-service"],
                               capture_output=True, text=True, check=True).stdout.split()
-    assert len(replicas) >= 2, f"need 2 booking replicas, found {len(replicas)} — use the chaos overlay + --scale"
+    assert len(replicas) >= 2, f"need 2 booking replicas, found {len(replicas)}; use the chaos overlay + --scale"
 
     # -- storm + kill -----------------------------------------------------
     print("== storm")

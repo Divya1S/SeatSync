@@ -23,7 +23,7 @@ import java.util.UUID;
 
 /**
  * Booking confirm flow, per conventions section 6.3. The AVAILABLE -> BOOKED
- * transition is protected by the JPA @Version optimistic lock on seat_inventory —
+ * transition is protected by the JPA @Version optimistic lock on seat_inventory,
  * the FINAL guard against double booking, independent of Redis hold exclusivity.
  *
  * <p>Idempotent replay (review #4): {@code bookings.hold_id} is UNIQUE, so the
@@ -32,7 +32,7 @@ import java.util.UUID;
  * get 403, expired/inactive holds still 409.
  *
  * <p>The BookingConfirmed event is written to the transactional outbox INSIDE
- * the confirm transaction (review #1) — the HTTP path never touches Kafka.
+ * the confirm transaction (review #1); the HTTP path never touches Kafka.
  */
 @Service
 public class BookingService {
@@ -105,7 +105,7 @@ public class BookingService {
         }
         seat.setStatus(SeatStatus.BOOKED);
         try {
-            // FINAL guard: @Version optimistic lock — exactly one concurrent
+            // FINAL guard: @Version optimistic lock; exactly one concurrent
             // transaction can move this row from AVAILABLE to BOOKED.
             seatInventoryRepository.saveAndFlush(seat);
         } catch (OptimisticLockingFailureException e) {

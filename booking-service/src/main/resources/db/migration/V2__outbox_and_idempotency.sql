@@ -1,4 +1,4 @@
--- Review #1: transactional outbox — events are written in the same transaction
+-- Review #1: transactional outbox. Events are written in the same transaction
 -- as the domain state change and relayed to Kafka asynchronously.
 CREATE TABLE outbox_events (
     id           UUID PRIMARY KEY,
@@ -15,7 +15,7 @@ CREATE INDEX idx_outbox_unpublished ON outbox_events (created_at) WHERE publishe
 -- The purge scans published rows by age.
 CREATE INDEX idx_outbox_published ON outbox_events (published_at) WHERE published_at IS NOT NULL;
 
--- Review #4: one hold produces at most one booking — holdId is the natural
+-- Review #4: one hold produces at most one booking; holdId is the natural
 -- idempotency key for POST /api/bookings. NULL allowed for legacy rows;
 -- Postgres UNIQUE permits multiple NULLs.
 ALTER TABLE bookings ADD COLUMN hold_id UUID;

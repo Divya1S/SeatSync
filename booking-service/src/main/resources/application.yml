@@ -1,9 +1,18 @@
 server:
   port: 8083
+  # Finish in-flight holds/confirms before the process exits (rolling deploys, SIGTERM).
+  shutdown: graceful
 
 spring:
   application:
     name: booking-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  task:
+    scheduling:
+      pool:
+        # The hold-expiry sweeper and the outbox relay must not block each other.
+        size: 2
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/seatsync_booking}
     username: ${SPRING_DATASOURCE_USERNAME:seatsync}
@@ -47,6 +56,8 @@ jwt:
 booking:
   hold-ttl: ${HOLD_TTL:PT5M}
   offer-ttl: ${OFFER_TTL:PT10M}
+  # Active holds one user may have on one event (abuse guard; groups need a few).
+  max-active-holds-per-user: ${MAX_ACTIVE_HOLDS_PER_USER:10}
 
 catalog:
   base-url: ${CATALOG_BASE_URL:http://localhost:8082}
@@ -72,7 +83,7 @@ logging:
     format:
       console: ${LOG_FORMAT:}
 
-# NOTE: the former "kafka-publish" circuit breaker is gone — the request path
+# NOTE: the former "kafka-publish" circuit breaker is gone: the request path
 # no longer touches Kafka (transactional outbox); the OutboxRelay retries
 # forever and relies on the fail-fast producer properties above.
 resilience4j:

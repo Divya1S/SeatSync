@@ -1,232 +1,231 @@
 # SeatSync
 
-**A real-time booking platform where many concurrent users compete for
-limited-capacity seats: concerts, campus events, workshops, rec-league games —
-and no seat is ever sold twice.**
+SeatSync is a reserved-seat booking platform for concerts, campus events,
+workshops and rec-league games. Its one hard guarantee is that a seat is never sold
+twice and an event never oversells, including under concurrent load and while
+Redis, Kafka or a service replica is failing. The whole stack runs locally with
+a single `docker compose up`.
 
+## Features
 
-## 1. The problem: overselling
+- Event catalog with search and filters; seat maps derived from section layouts
+- Five-minute seat holds with a live countdown; booking confirmation guarded by
+  an optimistic lock
+- Live seat state pushed over STOMP WebSockets, correct across service replicas
+- Waitlist whose offers are real ten-minute holds that cascade to the next
+  person when ignored
+- Email notifications (booking confirmed, hold expired, waitlist offer) delivered
+  through a transactional outbox, Kafka, idempotent consumers and a dead-letter
+  topic
+- Organizer dashboard with live sales and revenue
+- JWT authentication with rotating refresh tokens, logout, role-based access and
+  per-IP rate limiting at the gateway
+- AI concierge: retrieval over the platform's policy documents plus live catalog
+  and booking tools, returning sources, a confidence level and an explicit
+  escalation to a human when it is unsure
 
-When 500 people hit "book" on the last 10 seats of a Friday show, a naive
-`SELECT status FROM seats` → `UPDATE seats SET status='BOOKED'` flow
-double-sells seats: two requests both read `AVAILABLE` before either writes.
-The people it hurts are real two ticket-holders standing at one seat, a
-rec-league game with 14 players for 10 spots, a workshop room over fire
-capacity. Refunds, support tickets, and lost trust follow. The hard part is
-that overselling is *invisible in testing* it only appears under genuinely
-concurrent load, which is exactly what SeatSync is built and **proven** to
-survive.
+## Tech stack
 
-## 2. Architecture
+| Layer | Technologies |
+|---|---|
+| Backend | Java 21, Spring Boot 3.5, Spring Cloud Gateway, Spring Data JPA, Spring Kafka, Spring AI 1.1, Resilience4j, Redisson, Flyway |
+| Frontend | Angular 21, Angular Material, signals, STOMP over SockJS |
+| Data and messaging | PostgreSQL 16 with pgvector, Redis 7, Kafka 3.9 (KRaft) |
+| Observability | Micrometer tracing to Zipkin, structured logs, Spring Boot Actuator |
+| Testing | JUnit 5, Mockito, Testcontainers, Toxiproxy, jqwik, Pact, ArchUnit, PIT, JaCoCo, Karma/Jasmine, k6 |
+| Delivery | Docker Compose, GitHub Actions |
 
-Six Spring Boot services behind a gateway, one Angular SPA, and three pieces
-of infrastructure (Postgres, Redis, Kafka).
+## Architecture
 
 ```
-Angular SPA ──REST/WS──▶ api-gateway (JWT @ edge, per-IP rate limit)
-                           ├─▶ auth-service        JWT access+refresh, roles
-                           ├─▶ catalog-service     events/venues/seat maps, Redis cache-aside
-                           ├─▶ booking-service     holds → optimistic-lock confirm, WS live seats
-                           │       └─publishes──▶ Kafka ──▶ notification-service ──▶ Mailpit
-                           └─▶ ai-concierge        Spring AI RAG (pgvector) + live tool calls
+Angular SPA ──REST/WS──▶ api-gateway (JWT at the edge, per-IP rate limit, CORS)
+                           ├─▶ auth-service          JWT access + refresh tokens, roles
+                           ├─▶ catalog-service       events, venues, seat maps, Redis cache-aside
+                           ├─▶ booking-service       holds → optimistic-lock confirm, waitlist, live seats
+                           │       └─ outbox ──▶ Kafka ──▶ notification-service ──▶ SMTP (Mailpit)
+                           └─▶ ai-concierge-service  Spring AI RAG (pgvector) + live tool calls
 ```
 
 | Service | Port | Responsibility |
 |---|---|---|
 | [api-gateway](api-gateway/) | 8080 | routing, edge JWT validation, per-IP rate limiting, CORS |
-| [auth-service](auth-service/) | 8081 (host: 18081) | register/login, JWT access + rotating refresh tokens, roles `ATTENDEE / ORGANIZER / ADMIN` |
-| [catalog-service](catalog-service/) | 8082 | events, venues, seat maps; Redis cache-aside on hot reads |
-| [booking-service](booking-service/) | 8083 | 5-min Redis holds, optimistic-lock booking confirm, hold-expiry job, waitlist, Kafka events, STOMP WebSocket |
-| [notification-service](notification-service/) | 8084 | consumes `BookingConfirmed` / `HoldExpired` / `WaitlistOffered`, sends sandboxed email |
-| [ai-concierge-service](ai-concierge-service/) | 8085 | RAG over policy docs + tool-calling into live catalog/booking data |
-| [frontend](frontend/) | 4200 | Angular 21 SPA — live seat map, hold countdown, dashboards, AI chat widget |
+| [auth-service](auth-service/) | 8081 (host 18081) | register, login, refresh rotation, logout; roles `ATTENDEE`, `ORGANIZER`, `ADMIN` |
+| [catalog-service](catalog-service/) | 8082 | events, venues, derived seat maps; Redis cache-aside on hot reads |
+| [booking-service](booking-service/) | 8083 | holds, confirm, cancel, waitlist, hold-expiry sweeper, transactional outbox, STOMP broadcasts |
+| [notification-service](notification-service/) | 8084 | consumes `BookingConfirmed`, `HoldExpired`, `WaitlistOffered`; sends email with dedupe, retries and a DLT |
+| [ai-concierge-service](ai-concierge-service/) | 8085 | RAG over policy documents plus tools against catalog and booking |
+| [frontend](frontend/) | 4200 | Angular SPA served by nginx, which proxies `/api` and `/ws` to the gateway |
 
-## 3. The concurrency approach and its trade-offs
+Each service owns its own PostgreSQL database. Commands and queries are
+synchronous REST; facts that already happened travel over Kafka. Services never
+import each other's code (enforced by ArchUnit); they share only the
+conventions document, the JSON Schemas for events and the Pact contracts.
+Diagrams and sequence flows are in [docs/architecture.md](docs/architecture.md).
 
-A seat's lifecycle is `AVAILABLE → (held) → BOOKED`, guarded by three layers:
+## How overselling is prevented
 
-1. **Atomic hold claim (Redis)** — `SET hold:{event}:{seat} NX PX 300000`.
-   One winner per seat per 5 minute window; contention is absorbed in
-   sub-millisecond cache ops instead of DB row locks. TTL makes abandonment
-   cleanup free.
-2. **Authoritative hold state (Postgres)** — every hold is also a DB row with
-   an expiry timestamp; a scheduled job expires stale holds and publishes
-   `HoldExpired`. Redis is a fast path, never the source of truth.
-3. **Final guard: JPA optimistic locking** — `seat_inventory.version`
-   (`@Version`). The confirm transaction re-reads the seat, asserts
-   `AVAILABLE`, writes `BOOKED`; if *anything* raced it even a total Redis
-   failure handing the same seat to two users exactly one commit wins and
-   the loser receives a clean `409 Conflict`.
+A seat moves `AVAILABLE → held → BOOKED` behind three layers:
 
-**Proof, not promise:** `booking-service` ships a Testcontainers race test
-(`ConcurrentBookingRaceIT`) that boots real Postgres + Redis + Kafka, fires
-**60 simultaneous** hold+confirm requests at **10 seats** from a latch-released
-thread pool, and asserts exactly 10 confirmed bookings, ≤1 booking per seat,
-zero 5xx. A second test (`OptimisticLockGuardIT`) deliberately bypasses Redis
-exclusivity to prove the `@Version` guard alone stops overselling.
+1. **Atomic hold claim in Redis.** `SET hold:{event}:{seat} NX PX 300000` gives
+   one winner per seat per five-minute window and rejects the losers in a
+   sub-millisecond cache operation, before any database transaction opens.
+2. **Authoritative hold row in PostgreSQL.** Every hold also has a row with an
+   expiry timestamp; confirm and the expiry sweeper read that timestamp, never
+   the Redis TTL. Redis is a fast path, not the source of truth.
+3. **Optimistic lock on the seat row.** The confirm transaction re-reads the
+   seat, asserts `AVAILABLE` and writes `BOOKED` through a JPA `@Version`
+   column. If anything raced it, even a Redis failure that handed the same seat
+   to two users, exactly one commit wins and the other gets a clean `409`.
 
-**Why optimistic, not pessimistic locking?** Real contention on a *specific*
-seat is short and rare once holds pre-filter it. Optimistic locking means no
-held row locks, no lock-wait pileups, no deadlocks losers fail fast with a
-friendly error and the seat map refreshes live. Pessimistic `FOR UPDATE`
-would serialize honest traffic to protect against a race that layers 1–2
-have already made rare.
+Optimistic locking was chosen over `SELECT ... FOR UPDATE` because the holds
+make contention on a specific seat rare and brief: no row locks are held, there
+are no lock-wait pileups or deadlocks, and losers fail fast while the seat map
+refreshes live.
 
-**Graceful degradation** (Resilience4j on every downstream call):
+Two integration tests pin this down: `ConcurrentBookingRaceIT` fires 60
+simultaneous hold-and-confirm requests at 10 seats against real PostgreSQL,
+Redis and Kafka and asserts exactly 10 bookings and no 5xx responses;
+`OptimisticLockGuardIT` bypasses Redis entirely, inserts 60 valid holds on one
+seat and proves that only one confirm succeeds.
+
+## Behaviour under failure
 
 | Dependency down | Behaviour |
 |---|---|
-| Kafka | Bookings still succeed; events commit to a **transactional outbox** in the same DB transaction and a relay delivers them (at-least-once, consumer-deduped) once the broker returns — delayed, never lost |
-| notification-service | No user impact it's async by construction |
-| AI concierge / OpenAI | Chat degrades to "concierge offline, email a human"; booking flow untouched |
-| Redis (catalog cache) | Cache-aside falls through to Postgres |
-| catalog-service | Booking still works for events whose inventory is already seeded; 503 with a clear message otherwise |
+| Kafka | Bookings still succeed. Events are committed to a transactional outbox in the same database transaction and relayed once the broker returns (at-least-once, deduplicated by consumers). |
+| notification-service | No user impact; it is asynchronous by construction. |
+| AI concierge or OpenAI | Chat answers "the concierge is offline, email support" and flags the escalation; booking is untouched. |
+| Redis | Catalog cache-aside falls through to PostgreSQL. In-flight confirms still succeed; new holds fail fast with a clean error until Redis returns. |
+| catalog-service | Booking continues for events whose inventory is already seeded; otherwise a clear `503`. |
+| A booking replica | Orphaned holds are swept by the survivor; outbox rows it had claimed are relayed by the survivor. |
 
-**Design review, then fixes.** After the build, the spec and implementation
-went through a deliberately undiplomatic staff-style review
-([docs/design-review-2026-07-16.md](docs/design-review-2026-07-16.md)):
-dual-write on publish, fake waitlist reservations, retry-hostile booking
-semantics, replica-unsafe sweeping and WebSocket fan-out, a spoofable
-rate-limit key, and an accidentally load-bearing Redisson lock — each with
-its concrete failure mode, and each fixed (transactional outbox + consumer
-dedupe, offer-holds, idempotent replay on `holdId`, `SKIP LOCKED` claims,
-Redis pub/sub bridge, remote-address keying, idempotent seeding).
+Each of these was exercised with Toxiproxy and a kill-the-node run; the
+measured results are in [docs/verification.md](docs/verification.md).
 
-**What changes at 10× scale** — keyspace-notification-driven hold expiry,
-dedicated broker relay for WebSocket fan-out, catalog read replicas / CQRS
-seat-state projections. Notably the oversell guard itself doesn't change: a
-per-row version check is already the minimal serialization point. Full
-discussion in [docs/architecture.md](docs/architecture.md).
+## AI concierge
 
-## 4. Responsible AI — the concierge that refuses to guess
+The concierge answers questions such as "are there seats left for Friday Night
+Jazz?" or "what is the refund policy?". Answers come only from the platform's
+policy documents (pgvector embeddings) and live tool calls into catalog and
+booking. Every response carries `sources[]` with retrieval scores, a
+`confidence` of `HIGH`, `MEDIUM` or `LOW`, and `escalatedToHuman`. Low
+confidence, missing context, failed tools or a missing API key all produce the
+same outcome: "I'm not sure, contact support@seatsync.local". Without an
+`OPENAI_API_KEY` the service still starts, health stays up and the booking path
+is unaffected.
 
-The AI concierge answers questions like *"are there still seats for Friday
-Night Jazz?"* or *"what's the refund policy?"*. Design choices, made
-deliberately and documented here as part of the deliverable:
+## Verification
 
-- **Grounded or silent.** Answers come only from (a) a RAG pipeline over the
-  platform's real policy documents (pgvector embeddings, retrieval scores
-  surfaced to the user) and (b) **live tool calls** into catalog and booking
-  APIs for current availability. The system prompt forbids inventing events,
-  prices, seat counts, or policies.
-- **Visible provenance.** Every answer returns `sources[]` (document title,
-  snippet, similarity score) and a `confidence` badge (HIGH / MEDIUM / LOW)
-  computed from retrieval scores and whether live tools were used — shown in
-  the chat UI, not hidden in logs.
-- **Human escalation over hallucination.** Low confidence, missing context,
-  failed tools, or a missing/broken model API all produce the same honest
-  outcome: * `escalatedToHuman: true`, rendered distinctly in the widget.
-- **Fail closed, degrade gracefully.** No `OPENAI_API_KEY`? The service boots,
-  health stays green, and users get the human-contact message. An AI outage
-  can never break the booking path.
+Every service runs unit tests, Testcontainers integration tests, ArchUnit
+structural rules and a JaCoCo line-coverage gate on `./mvnw verify`.
+booking-service additionally runs the race tests, a Toxiproxy chaos suite,
+jqwik property-based interleaving tests and PIT mutation testing. REST edges are
+covered by Pact contracts verified on both sides; Kafka payloads are validated
+against JSON Schemas with a CI gate that rejects backward-incompatible changes.
 
-## 4b. Making "zero overselling" falsifiable — adversarial verification
+Measured on 2026-10-11 (laptop-class hardware, full Compose stack):
 
-The happy-path race test is necessary but not sufficient, so the invariant is
-attacked from five more directions (details:
-[docs/chaos-and-availability.md](docs/chaos-and-availability.md)):
+| Check | Result |
+|---|---|
+| Race test | 60 threads vs 10 seats: exactly 10 bookings, 50 clean `409`s, 0 5xx |
+| k6 write storm | 150 purchase attempts vs a 44-seat event: 44 bookings, 74 `409`s, 0 5xx, median 67 ms per hold-and-confirm |
+| k6 read path | about 1,470 req/s at 300 virtual users, p95 under 15 ms |
+| Chaos scenarios | Redis down, Redis +3 s latency, Kafka down, PostgreSQL pool exhaustion, catalog partition (Toxiproxy, in CI) and a replica SIGKILL (manual): availability degraded, correctness held in every scenario |
+| Line coverage (unit + integration) | booking 88.7%, auth 92.9%, catalog 86.9%, notification 90.8%, concierge 79.6%, gateway 93.1%; each gate is the measured value rounded down |
+| PIT mutation score (booking services) | 72% (139 of 192 mutants killed), gate 70% |
 
-- **Toxiproxy chaos suite** (in CI): Redis killed mid-booking, Redis +3 s
-  latency, Kafka down through a sales window, Postgres pool exhaustion,
-  booking↔catalog network partition measured result: availability degrades
-  (fast, clean failures no hangs), **correctness held in every scenario**.
-- **Property-based testing** (jqwik): randomized hold/expire/confirm/cancel
-  interleavings against real Postgres, asserting no double-confirmed seats,
-  every confirmed booking has its outbox row, and hold counts never exceed
-  capacity with shrinking to a minimal failing sequence if one ever appears.
-- **Kill-the-node** (`infra/chaos/kill_node_test.py`): SIGKILL one of two
-  booking replicas mid-transaction under load. Measured: 0 double-bookings,
-  orphaned holds swept by the survivor, outbox drained; failover cost ~1–2 min
-  of degraded gateway availability (documented, with the fix noted as future
-  work).
-- **Pact contract tests** on every REST boundary (booking→catalog,
-  concierge→catalog, concierge→booking), pacts committed under
-  [contracts/pacts/](contracts/pacts/) and verified on **both** sides in CI;
-  Kafka payloads are gated by JSON Schema compatibility checks.
-- **ArchUnit** structural rules in every service (no controller→repository,
-  no entities at the API edge, no private `@Transactional`, no cross-service
-  imports) these found and forced the fix of 3 real violations.
+Full methodology and numbers: [docs/verification.md](docs/verification.md).
 
-**Honest quality numbers** (measured 2026-07-16, gates set at the measured
-value rounded *down* a ratchet, not a trophy):
+## Prerequisites
 
-| Service | Line coverage (unit+IT merged) | Gate | Notes |
-|---|---|---|---|
-| booking-service | 86.8% | 0.85 | **PIT mutation score on the invariant-enforcing services: 51% (test strength 96%), threshold 50** survivors are IT-covered infrastructure and logging branches, listed in the PIT report, not gamed away |
-| auth-service | 91.7% | 0.90 | |
-| catalog-service | 84.8% | 0.80 | |
-| notification-service | 90.5% | 0.90 | |
-| ai-concierge-service | 75.7% | 0.75 | AI pipeline glue is exercised via offline-mode tests; live-LLM paths excluded by design |
-| api-gateway | 91.3% | 0.90 | |
+- Docker with Compose v2 (the only requirement to run the stack)
+- For development: JDK 21, Node.js 22 or newer, and Docker for the
+  Testcontainers-based integration tests. Each service ships the Maven wrapper.
 
-Line coverage is a floor detector, not a quality claim the numbers worth
-trusting are the mutation score on the booking domain, the chaos verdicts,
-and the race tests.
-
-## 5. Quick start
+## Quick start
 
 ```bash
-git clone <repo> && cd SeatSync
-docker compose up --build          # one command; first build takes a few minutes
+git clone https://github.com/Divya1S/SeatSync.git
+cd SeatSync
+docker compose up --build        # the first build takes a few minutes
 ```
 
 | URL | What |
 |---|---|
 | http://localhost:4200 | SeatSync app |
 | http://localhost:8080 | API gateway |
-| http://localhost:8025 | Mailpit — the "sent" booking emails |
+| http://localhost:8025 | Mailpit, the "sent" booking emails |
 | http://localhost:9411 | Zipkin traces (hold → book → notify) |
 
 Seeded accounts: `attendee@seatsync.local` / `attendee1!`,
 `organizer@seatsync.local` / `organizer1!`, `admin@seatsync.local` / `admin123!`.
 
-Enable the AI concierge (optional): `OPENAI_API_KEY=sk-... docker compose up`.
+To enable the AI concierge, provide a key: `OPENAI_API_KEY=sk-... docker compose up`.
 
-Run everything's tests (each service is a standalone Maven project;
-Testcontainers needs Docker):
+## Configuration
+
+Every service reads `application.yml` with environment-variable overrides.
+Defaults target local development; [.env.example](.env.example) lists every
+variable. The ones that matter beyond a laptop:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `JWT_SECRET` | development value (services log a warning while it is in use) | HS256 signing key shared by all services; set a private value of at least 32 bytes in any shared deployment |
+| `OPENAI_API_KEY` | `sk-dummy-offline` | enables the AI concierge; otherwise it answers in offline mode |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:4200` | comma-separated SPA origins allowed by the gateway |
+| `RATE_LIMIT_REPLENISH` / `RATE_LIMIT_BURST` | 20 / 40 | per-IP token bucket on data routes |
+| `CHAT_RATE_LIMIT_REPLENISH` / `CHAT_RATE_LIMIT_BURST` | 2 / 5 | per-IP budget for the public chat endpoint |
+| `TRUST_XFF` | `false` | use the first `X-Forwarded-For` value as the client key; only behind a trusted proxy |
+| `HOLD_TTL` / `OFFER_TTL` | `PT5M` / `PT10M` | seat hold and waitlist-offer lifetimes |
+| `MAX_ACTIVE_HOLDS_PER_USER` | 10 | active holds one account may have on one event |
+| `CHAT_MEMORY_IDLE_TTL` / `CHAT_MEMORY_MAX_CONVERSATIONS` | `PT30M` / 10000 | bounds on the concierge's in-memory conversation store |
+| `CATALOG_CACHE_ENABLED` | `true` | toggles the Redis cache-aside layer |
+| `ADMIN_PASSWORD` | `admin123!` | password of the seeded admin account |
+
+All services stop gracefully (20 s drain) and the six Java service containers
+run as an unprivileged user. Access tokens live 15 minutes and are not
+revocable; refresh tokens are rotated on use, revoked by `POST /api/auth/logout`,
+and reuse of a rotated token revokes the user's whole token family.
+
+## Running the tests
+
+Each service is a standalone Maven project. Unit tests need only a JDK;
+integration tests (`*IT`) start PostgreSQL, Redis, Kafka and Toxiproxy with
+Testcontainers and need a running Docker daemon.
 
 ```bash
-cd booking-service && ./mvnw verify     # includes the 60-thread race test
+cd booking-service && ./mvnw test      # unit tests, ArchUnit, Pact consumer, schema contract
+cd booking-service && ./mvnw verify    # plus race, chaos, property and outbox tests and the coverage gate
+cd booking-service && ./mvnw -Ppit org.pitest:pitest-maven:mutationCoverage
+cd frontend && npm ci && npm test && npm run build
 ```
 
-## 6. Load test — measured results
+Load tests (`infra/k6/`) and the kill-the-node script (`infra/chaos/`) run
+against the live Compose stack; see [docs/verification.md](docs/verification.md).
 
-k6 scripts live in [infra/k6/](infra/k6/); full methodology and numbers in
-[docs/load-test-report.md](docs/load-test-report.md). Headlines from the live
-compose stack (through the gateway, laptop-class hardware):
-
-- **Write path:** 150 concurrent purchase attempts vs a 44-seat event →
-  **exactly 44 bookings (sold out), 74 clean 409s, zero 5xx, zero oversell**;
-  contention losers rejected in sub-millisecond Redis ops (median full
-  hold+confirm sequence: 67 ms).
-- **Read path:** ~1,470 req/s at 300 VUs with p95 ≤ 15 ms either way. Honest
-  finding: on a warm localhost Postgres with derived seat maps, the Redis
-  cache does **not** lower latency (large cached blobs even add a few ms) —
-  its value is isolating hot-event reads from booking writes (DB pool
-  headroom), which the report discusses along with when cache-aside actually
-  wins and two concrete improvements.
-- **Degradation:** with Kafka + notifications stopped, bookings still confirm
-  in ~70 ms (fire-and-forget publish behind a circuit breaker).
-
-Ops knobs used by the tests (compose env): `CATALOG_CACHE_ENABLED`
-(cache-aside on/off), `RATE_LIMIT_REPLENISH` / `RATE_LIMIT_BURST` (per-IP
-gateway limits).
-
-## 7. Repository layout
+## Repository layout
 
 ```
 api-gateway/  auth-service/  catalog-service/  booking-service/
 notification-service/  ai-concierge-service/  frontend/
 docker-compose.yml         one-command local stack
-contracts/                 JSON Schema wire contracts for all Kafka events (CI-gated)
-docs/                      architecture, conventions, design review, ADRs
-                           (decisions.md), DLT replay runbook, load report
+.env.example               every environment variable with its default
+contracts/                 JSON Schemas for Kafka events and Pact files for REST edges
+docs/                      architecture, conventions, decisions, verification, runbook, reviews
 infra/postgres/            per-service database bootstrap
-infra/k6/                  load scripts
-.github/workflows/ci.yml   build + test per service + frontend + images
-                           + schema-compatibility gate
+infra/k6/                  load-test scripts
+infra/chaos/               compose overlay and kill-the-node script
+.github/workflows/ci.yml   build and test every service, frontend, schema gate, images
 ```
 
-Built incrementally (see git history): ① auth + catalog + REST booking,
-② Redis holds + optimistic-lock guard + race test, ③ Kafka + notifications,
-④ AI concierge, ⑤ Angular frontend & polish.
+## Documentation
+
+- [docs/architecture.md](docs/architecture.md): component and sequence diagrams, trade-offs, what changes at scale
+- [docs/CONVENTIONS.md](docs/CONVENTIONS.md): the cross-service contract (ports, JSON shapes, topics, security rules, testing standards)
+- [docs/decisions.md](docs/decisions.md): design decisions with the alternatives that were rejected
+- [docs/verification.md](docs/verification.md): load-test and chaos results
+- [docs/runbook-dlt-replay.md](docs/runbook-dlt-replay.md): inspecting and replaying the dead-letter topic
+- [docs/design-review-2026-07-16.md](docs/design-review-2026-07-16.md): findings from the design review and the fixes that followed
+- [docs/audit-2026-10-11.md](docs/audit-2026-10-11.md): codebase audit, fixes, verification and open issues
+- [contracts/README.md](contracts/README.md): event schema contracts and the compatibility gate
+- [frontend/README.md](frontend/README.md): developing, testing and building the SPA

@@ -21,7 +21,7 @@ import java.util.List;
  * centrally as a {@link RetryTopicConfiguration} bean (spring-kafka picks it
  * up for every listener whose topics match {@code includeTopics}; the
  * retry-topic machinery installs its own error handler on those containers,
- * which is why no separate {@code DefaultErrorHandler} bean exists anymore —
+ * which is why no separate {@code DefaultErrorHandler} bean exists anymore;
  * one would silently lose to this configuration and never see the records).
  *
  * <p>Semantics: 4 total attempts, exponential backoff 1s ×2 (capped at 8s),
@@ -30,15 +30,15 @@ import java.util.List;
  * 3 partitions / RF 1 to match §6.4. Note: spring-kafka materializes one
  * retry topic per DISTINCT backoff interval (the delay is a per-topic
  * property), so exponential 1s/2s/4s yields {@code <topic>-retry-1000/-2000/
- * -4000}; SINGLE_TOPIC merges only same-interval attempts — a literal single
+ * -4000}; SINGLE_TOPIC merges only same-interval attempts; a literal single
  * {@code <topic>-retry} would require a fixed delay.
  *
  * <p>Classification ({@code retryOn} allowlist, causes traversed):
  * transient = mail transport ({@link MailException}) and DB unavailability
  * ({@link TransientDataAccessException}, {@link DataAccessResourceFailureException},
- * {@link CannotCreateTransactionException}) → retried; everything else —
- * {@link PoisonMessageException}, payload-validation errors, unexpected bugs
- * — is treated as non-retryable and goes straight to the DLT, where the
+ * {@link CannotCreateTransactionException}) → retried; everything else
+ * ({@link PoisonMessageException}, payload-validation errors, unexpected bugs)
+ * is treated as non-retryable and goes straight to the DLT, where the
  * payload stays replayable.
  */
 @Configuration

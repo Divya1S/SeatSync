@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -25,9 +27,11 @@ import java.util.concurrent.TimeUnit;
  * touched. Seeding is IDEMPOTENT (review #7): every row is inserted with
  * {@code ON CONFLICT (event_id, seat_id) DO NOTHING}, so concurrent seeders
  * converge on the same inventory instead of failing. The Redisson lock
- * {@code lock:inventory:{eventId}} is a stampede-reduction optimization ONLY —
- * correctness comes from the unique constraint; a lost or expired lock may cost
- * latency (duplicate catalog fetches), never correctness.
+ * {@code lock:inventory:{eventId}} is a stampede-reduction optimization ONLY:
+ * correctness comes from the unique constraint, so when Redis cannot even hand
+ * out the lock the seeder proceeds without it. The batch insert and the durable
+ * event-name record commit in one transaction, so a mid-batch failure never
+ * leaves partial inventory behind.
  */
 @Service
 public class InventoryService {
@@ -50,30 +54,39 @@ public class InventoryService {
     private final EventNameResolver eventNameResolver;
     private final RedissonClient redissonClient;
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionTemplate seedTransaction;
 
     public InventoryService(SeatInventoryRepository seatInventoryRepository,
                             CatalogGateway catalogGateway,
                             EventNameResolver eventNameResolver,
                             RedissonClient redissonClient,
-                            JdbcTemplate jdbcTemplate) {
+                            JdbcTemplate jdbcTemplate,
+                            PlatformTransactionManager transactionManager) {
         this.seatInventoryRepository = seatInventoryRepository;
         this.catalogGateway = catalogGateway;
         this.eventNameResolver = eventNameResolver;
         this.redissonClient = redissonClient;
         this.jdbcTemplate = jdbcTemplate;
+        this.seedTransaction = new TransactionTemplate(transactionManager);
     }
 
     public void ensureSeeded(UUID eventId) {
         if (seatInventoryRepository.existsByEventId(eventId)) {
             return;
         }
-        RLock lock = redissonClient.getLock("lock:inventory:" + eventId);
+        RLock lock = null;
         boolean locked = false;
         try {
             try {
+                lock = redissonClient.getLock("lock:inventory:" + eventId);
                 locked = lock.tryLock(10, 30, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            } catch (RuntimeException e) {
+                // Redis unreachable: the lock only damps the first-touch stampede,
+                // so proceed unlocked rather than failing the hold.
+                log.warn("Seeding lock unavailable for event {} (proceeding without it): {}",
+                        eventId, e.getMessage());
             }
             // With or without the lock, proceed: seeding is idempotent, so a
             // concurrent seeder converges instead of erroring. Not holding the
@@ -84,7 +97,11 @@ public class InventoryService {
             seedFromCatalog(eventId);
         } finally {
             if (locked) {
-                lock.unlock();
+                try {
+                    lock.unlock();
+                } catch (RuntimeException e) {
+                    log.warn("Could not release seeding lock for event {}: {}", eventId, e.getMessage());
+                }
             }
         }
     }
@@ -125,19 +142,24 @@ public class InventoryService {
         if (rows.isEmpty()) {
             throw ApiException.conflict("Event " + eventId + " has no seats to book");
         }
-        // Per-row ON CONFLICT DO NOTHING: a lost lock race converges to the same
-        // inventory — the second seeder inserts zero rows and both requests proceed.
-        jdbcTemplate.batchUpdate(INSERT_SEAT_SQL, rows, 100, (ps, row) -> {
-            ps.setObject(1, UUID.randomUUID());
-            ps.setObject(2, eventId);
-            ps.setString(3, row.seatId());
-            ps.setString(4, row.section());
-            ps.setString(5, row.rowLabel());
-            ps.setInt(6, row.seatNumber());
-            ps.setBigDecimal(7, row.price());
-            ps.setString(8, SeatStatus.AVAILABLE.name());
+        String eventName = event.name();
+        // One transaction for the whole seat map plus the durable name: a failure
+        // mid-batch rolls everything back instead of leaving partial inventory.
+        seedTransaction.executeWithoutResult(status -> {
+            // Per-row ON CONFLICT DO NOTHING: a lost lock race converges to the same
+            // inventory; the second seeder inserts zero rows and both requests proceed.
+            jdbcTemplate.batchUpdate(INSERT_SEAT_SQL, rows, 100, (ps, row) -> {
+                ps.setObject(1, UUID.randomUUID());
+                ps.setObject(2, eventId);
+                ps.setString(3, row.seatId());
+                ps.setString(4, row.section());
+                ps.setString(5, row.rowLabel());
+                ps.setInt(6, row.seatNumber());
+                ps.setBigDecimal(7, row.price());
+                ps.setString(8, SeatStatus.AVAILABLE.name());
+            });
+            eventNameResolver.cache(eventId, eventName);
         });
-        eventNameResolver.cache(eventId, event.name());
         log.info("Seeded inventory ({} seats) for event {}", rows.size(), eventId);
     }
 }

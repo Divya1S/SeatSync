@@ -61,6 +61,21 @@ class JwtAuthGlobalFilterTest {
         assertPassesThrough(MockServerHttpRequest.post("/api/auth/register").build());
         assertPassesThrough(MockServerHttpRequest.post("/api/auth/login").build());
         assertPassesThrough(MockServerHttpRequest.post("/api/auth/refresh").build());
+        assertPassesThrough(MockServerHttpRequest.post("/api/auth/logout").build());
+    }
+
+    @Test
+    void tokenFromAnotherIssuerReturns401() {
+        String foreign = Jwts.builder()
+                .subject(UUID.randomUUID().toString())
+                .claim("typ", "access")
+                .issuer("someone-else")
+                .expiration(Date.from(Instant.now().plusSeconds(600)))
+                .signWith(KEY, Jwts.SIG.HS256)
+                .compact();
+        assertUnauthorized(MockServerHttpRequest.get("/api/bookings/mine")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + foreign)
+                .build());
     }
 
     @Test

@@ -46,7 +46,7 @@ public class Booking {
     private Instant confirmedAt;
 
     /**
-     * The hold this booking was confirmed from — UNIQUE in the database: one hold
+     * The hold this booking was confirmed from, UNIQUE in the database: one hold
      * produces at most one booking, making holdId the natural idempotency key for
      * POST /api/bookings (conventions section 6.3). Nullable only for legacy rows.
      */

@@ -5,6 +5,7 @@ import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.support.KafkaHeaders;
+import com.seatsync.notification.service.EmailMasker;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
@@ -13,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Terminal handler for records parked in a {@code <topic>-dlt} (§6.5).
  *
- * <p>Only logs (ERROR) — the notifications row, if one was claimed, was
+ * <p>Only logs (ERROR); the notifications row, if one was claimed, was
  * already left FAILED by {@code NotificationService}, and DLT records keep
  * the original payload plus the exception headers written by the
  * retry-topic machinery. Replay (see docs/runbook-dlt-replay.md) is safe at
@@ -35,7 +36,7 @@ public class NotificationDltHandler {
                 stringHeader(record, KafkaHeaders.EXCEPTION_FQCN),
                 stringHeader(record, KafkaHeaders.EXCEPTION_CAUSE_FQCN),
                 stringHeader(record, KafkaHeaders.EXCEPTION_MESSAGE),
-                abbreviate(record.value()));
+                EmailMasker.maskAll(abbreviate(record.value())));
     }
 
     private static String stringHeader(ConsumerRecord<?, ?> record, String name) {

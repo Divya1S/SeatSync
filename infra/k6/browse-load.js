@@ -37,7 +37,7 @@ export function setup() {
   const res = http.get(`${BASE}/api/catalog/events?size=20&q=${QUERY}`);
   check(res, { "search ok": (r) => r.status === 200 });
   const ids = JSON.parse(res.body).content.map((e) => e.id);
-  if (ids.length === 0) throw new Error("No published events — seed data missing?");
+  if (ids.length === 0) throw new Error("No published events; seed data missing?");
   return { ids };
 }
 

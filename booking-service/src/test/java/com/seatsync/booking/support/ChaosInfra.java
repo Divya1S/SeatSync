@@ -94,7 +94,7 @@ public final class ChaosInfra {
             // Kafka MUST start on this thread: its containerIsStarting hook invokes
             // the advertised-listener supplier (a static method of this class), and
             // from any OTHER thread that call would block on this class's still-
-            // running static initializer — a classic clinit deadlock. Same-thread
+            // running static initializer, a classic clinit deadlock. Same-thread
             // reentrant initialization is legal, so a plain start() here is safe.
             KAFKA.start();
         } catch (IOException e) {
@@ -119,7 +119,7 @@ public final class ChaosInfra {
         return TOXIPROXY.getMappedPort(REDIS_PROXY_PORT);
     }
 
-    /** Host-side Kafka endpoint (proxy listener) — also the broker's advertised address. */
+    /** Host-side Kafka endpoint (proxy listener); also the broker's advertised address. */
     public static String kafkaProxyBootstrap() {
         return TOXIPROXY.getHost() + ":" + TOXIPROXY.getMappedPort(KAFKA_PROXY_PORT);
     }
@@ -136,7 +136,7 @@ public final class ChaosInfra {
              Statement statement = connection.createStatement()) {
             statement.execute("CREATE DATABASE " + name);
         } catch (SQLException e) {
-            // Already exists (context re-created within the same JVM) — fine.
+            // Already exists (context re-created within the same JVM); fine.
         }
     }
 

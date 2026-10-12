@@ -52,7 +52,7 @@ public class CorpusIngestionService {
     public void ingestIfEmpty() {
         Long rows = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + VECTOR_TABLE, Long.class);
         if (rows != null && rows > 0) {
-            log.info("Vector store already holds {} chunks — skipping corpus ingestion", rows);
+            log.info("Vector store already holds {} chunks; skipping corpus ingestion", rows);
             return;
         }
         int indexed = ingestCorpus();

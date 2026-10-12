@@ -23,7 +23,7 @@ import java.net.URI;
 /**
  * Stateless security per CONVENTIONS §4: {@code POST /api/concierge/chat} is
  * public (the gateway rate-limits it), reindex requires ADMIN, health is open.
- * No CORS config here — the gateway owns CORS.
+ * No CORS config here; the gateway owns CORS.
  */
 @Configuration
 @EnableWebSecurity

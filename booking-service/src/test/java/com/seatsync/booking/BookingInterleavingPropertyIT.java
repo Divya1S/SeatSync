@@ -48,11 +48,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Integration approach (reported per 8.1): a manually-managed static
  * ApplicationContext booted once for the whole class, instead of
- * jqwik-spring — jqwik re-instantiates the test class for every try, and a
+ * jqwik-spring: jqwik re-instantiates the test class for every try, and a
  * plain static context keeps the lifecycle trivial and Boot-version-agnostic.
  *
  * <p>Seeds are FIXED so runs are reproducible and CI-stable; on failure jqwik
- * reports (and shrinks) the offending action sequence — the shrunk
+ * reports (and shrinks) the offending action sequence; the shrunk
  * {@code Action(type, user, seat)} list is the counterexample to transcribe.
  *
  * <p>After every sequence the three 8.1 invariants are asserted via SQL:
@@ -99,7 +99,7 @@ class BookingInterleavingPropertyIT {
              Statement statement = connection.createStatement()) {
             statement.execute("CREATE DATABASE " + name);
         } catch (SQLException e) {
-            // Already exists (same JVM) — fine.
+            // Already exists (same JVM); fine.
         }
     }
 
@@ -137,7 +137,7 @@ class BookingInterleavingPropertyIT {
 
     /**
      * Same model, but the two halves of the sequence run on two threads at
-     * once — a genuinely racy interleaving on top of the random ordering.
+     * once, a genuinely racy interleaving on top of the random ordering.
      */
     @Property(tries = 12, seed = "31337")
     void concurrentlyExecutedHalvesNeverViolateBookingInvariants(
@@ -223,7 +223,7 @@ class BookingInterleavingPropertyIT {
                 Deque<UUID> deque = s.activeHolds.get(action.user());
                 UUID holdId = deque == null ? null : deque.peek();
                 if (holdId == null) {
-                    return; // user has nothing to confirm — no-op
+                    return; // user has nothing to confirm: no-op
                 }
                 try {
                     BookingService.ConfirmResult result = bookingService.confirm(holdId, user);

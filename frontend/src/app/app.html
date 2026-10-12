@@ -22,7 +22,7 @@
       {{ user.fullName }}
     </button>
     <mat-menu #userMenu="matMenu">
-      <div class="user-menu-header">{{ user.email }} — {{ user.roles.join(', ') }}</div>
+      <div class="user-menu-header">{{ user.email }} · {{ user.roles.join(', ') }}</div>
       <button mat-menu-item routerLink="/my-bookings">
         <mat-icon>confirmation_number</mat-icon>
         My bookings

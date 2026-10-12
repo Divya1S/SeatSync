@@ -9,12 +9,20 @@ import org.springframework.stereotype.Component;
  * per-request {@link ToolInvocationTracker} flag (confidence heuristic: tool
  * used ⇒ HIGH) and delegates to {@link DownstreamClients}, which carries the
  * {@code downstream} circuit breaker. The try/catch here is a last line of
- * defense: a tool NEVER throws into the LLM loop — it returns a
+ * defense: a tool never throws into the LLM loop; it returns a
  * {@code TOOL_UNAVAILABLE} string so the model reports missing data instead of
- * guessing.
+ * guessing. Each turn also has a tool budget ({@value #MAX_TOOL_CALLS_PER_TURN}):
+ * once exhausted, tools answer {@code TOOL_BUDGET_EXCEEDED} without touching the
+ * downstream services, which bounds both runaway loops and cost.
  */
 @Component
 public class ConciergeTools {
+
+    /** Three tools, a couple of calls each, is a generous turn; more is a loop. */
+    static final int MAX_TOOL_CALLS_PER_TURN = 8;
+
+    static final String TOOL_BUDGET_EXCEEDED = "TOOL_BUDGET_EXCEEDED: no further tool calls are allowed "
+            + "in this turn; answer from the data already gathered or say you are not sure.";
 
     private final DownstreamClients downstreamClients;
     private final ToolInvocationTracker tracker;
@@ -32,7 +40,9 @@ public class ConciergeTools {
             @ToolParam(description = "Free-text search over event names and descriptions", required = false) String query,
             @ToolParam(description = "Filter by venue city", required = false) String city,
             @ToolParam(description = "Filter by category: CONCERT, WORKSHOP, SPORTS, CAMPUS or OTHER", required = false) String category) {
-        tracker.markInvoked();
+        if (tracker.markInvoked() > MAX_TOOL_CALLS_PER_TURN) {
+            return TOOL_BUDGET_EXCEEDED;
+        }
         try {
             return downstreamClients.searchEvents(query, city, category);
         } catch (Exception ex) {
@@ -46,7 +56,9 @@ public class ConciergeTools {
             NOT_FOUND if the event does not exist, or TOOL_UNAVAILABLE if the catalog is down.""")
     public String getEventDetails(
             @ToolParam(description = "The event id (UUID)") String eventId) {
-        tracker.markInvoked();
+        if (tracker.markInvoked() > MAX_TOOL_CALLS_PER_TURN) {
+            return TOOL_BUDGET_EXCEEDED;
+        }
         try {
             return downstreamClients.getEventDetails(eventId);
         } catch (Exception ex) {
@@ -60,7 +72,9 @@ public class ConciergeTools {
             service is down.""")
     public String getSeatAvailability(
             @ToolParam(description = "The event id (UUID)") String eventId) {
-        tracker.markInvoked();
+        if (tracker.markInvoked() > MAX_TOOL_CALLS_PER_TURN) {
+            return TOOL_BUDGET_EXCEEDED;
+        }
         try {
             return downstreamClients.getSeatAvailability(eventId);
         } catch (Exception ex) {

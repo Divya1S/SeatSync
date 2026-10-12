@@ -62,7 +62,7 @@ public abstract class AbstractChaosIT {
      * The conventions-8.1 invariant, asserted after every scenario:
      * no seat anywhere has two CONFIRMED bookings, and for the scenario's event
      * the booked seats never exceed capacity (with confirmed bookings and BOOKED
-     * inventory rows in lockstep — the chaos scenarios never cancel).
+     * inventory rows in lockstep; the chaos scenarios never cancel).
      */
     protected void assertNoOversell(UUID eventId, int capacity) {
         List<Map<String, Object>> doubleConfirmed = jdbc.queryForList(
@@ -86,7 +86,7 @@ public abstract class AbstractChaosIT {
                 .isEqualTo(booked);
     }
 
-    /** One-line verdict per scenario; transcribed into docs/chaos-and-availability.md. */
+    /** One-line verdict per scenario; transcribed into docs/verification.md. */
     protected static void verdict(String scenario, String availability) {
         System.out.println("CHAOS-VERDICT [" + scenario + "] correctness=HELD availability=" + availability);
     }

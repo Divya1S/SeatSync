@@ -22,7 +22,7 @@ import java.net.URI;
 
 /**
  * Stateless security: public register/login/refresh + health, everything else
- * requires a valid access token. No CORS config here — the gateway owns CORS.
+ * requires a valid access token. No CORS config here; the gateway owns CORS.
  */
 @Configuration
 @EnableWebSecurity
@@ -37,7 +37,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST,
-                                "/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
+                                "/api/auth/register", "/api/auth/login", "/api/auth/refresh",
+                                "/api/auth/logout").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(unauthorizedEntryPoint(objectMapper)))

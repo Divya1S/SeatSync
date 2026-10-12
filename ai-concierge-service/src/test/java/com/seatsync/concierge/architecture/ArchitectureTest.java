@@ -27,7 +27,7 @@ class ArchitectureTest {
             .should().dependOnClassesThat().resideInAnyPackage("..repo..", "..repository..")
             .because("controllers and web classes must go through services, not repositories (§8.1 rule 1)");
 
-    /** Rule 2: DTOs only at the edge — no @Entity types in api/web (by name: no JPA on this classpath). */
+    /** Rule 2: DTOs only at the edge: no @Entity types in api/web (by name: no JPA on this classpath). */
     @ArchTest
     static final ArchRule apiMustNotDependOnEntities = noClasses()
             .that().resideInAnyPackage("..api..", "..web..")

@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,11 @@ public class JwtService {
     public static final String TYP_ACCESS = "access";
     public static final String TYP_REFRESH = "refresh";
 
+    /** The application.yml fallback; fine on a laptop, never in a shared deployment. */
+    static final String DEV_SECRET_PLACEHOLDER = "seatsync-dev-secret-change-me-0123456789abcdef";
+
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
+
     private final SecretKey key;
     private final long accessTtlSeconds;
     private final long refreshTtlSeconds;
@@ -36,6 +43,10 @@ public class JwtService {
                       @Value("${seatsync.jwt.access-ttl-seconds}") long accessTtlSeconds,
                       @Value("${seatsync.jwt.refresh-ttl-seconds}") long refreshTtlSeconds) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        if (DEV_SECRET_PLACEHOLDER.equals(secret)) {
+            log.warn("JWT_SECRET is the built-in development value; set a private secret before "
+                    + "exposing this service beyond localhost");
+        }
         this.accessTtlSeconds = accessTtlSeconds;
         this.refreshTtlSeconds = refreshTtlSeconds;
     }

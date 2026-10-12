@@ -80,7 +80,7 @@ interface SectionFormValue {
               <mat-select formControlName="venueId">
                 @for (venue of venues(); track venue.id) {
                   <mat-option [value]="venue.id">
-                    {{ venue.name }} — {{ venue.city }}
+                    {{ venue.name }} · {{ venue.city }}
                   </mat-option>
                 }
               </mat-select>

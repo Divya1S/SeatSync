@@ -13,12 +13,17 @@ import java.util.Locale;
 
 public final class EventSpecifications {
 
+    /** Escape character for user-supplied text inside LIKE patterns. */
+    static final char LIKE_ESCAPE = '\\';
+
     private EventSpecifications() {
     }
 
     /**
      * Public search: PUBLISHED events only, optional free-text query on name/description
      * (case-insensitive), optional category / venue-city / date-range filters on startsAt.
+     * The free text is a bound parameter (no injection) AND LIKE-escaped, so a query of
+     * {@code %} or {@code _} matches those literal characters instead of everything.
      */
     public static Specification<Event> publicSearch(String q, EventCategory category, String city,
                                                     Instant from, Instant to) {
@@ -27,10 +32,10 @@ public final class EventSpecifications {
             predicates.add(cb.equal(root.get("status"), EventStatus.PUBLISHED));
 
             if (q != null && !q.isBlank()) {
-                String like = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
+                String like = "%" + escapeLike(q.trim().toLowerCase(Locale.ROOT)) + "%";
                 predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("name")), like),
-                        cb.like(cb.lower(root.get("description")), like)));
+                        cb.like(cb.lower(root.get("name")), like, LIKE_ESCAPE),
+                        cb.like(cb.lower(root.get("description")), like, LIKE_ESCAPE)));
             }
             if (category != null) {
                 predicates.add(cb.equal(root.get("category"), category));
@@ -47,5 +52,17 @@ public final class EventSpecifications {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    /** Neutralises LIKE metacharacters ({@code \ % _}) in user input. */
+    static String escapeLike(String raw) {
+        StringBuilder out = new StringBuilder(raw.length() + 8);
+        for (char c : raw.toCharArray()) {
+            if (c == LIKE_ESCAPE || c == '%' || c == '_') {
+                out.append(LIKE_ESCAPE);
+            }
+            out.append(c);
+        }
+        return out.toString();
     }
 }

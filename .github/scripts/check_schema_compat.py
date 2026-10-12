@@ -18,7 +18,7 @@ fails on changes that could break existing consumers:
     - description/title/doc-only changes
 
 Anything beyond these rules (e.g. restructuring away from a flat object)
-requires a new versioned topic per CONVENTIONS §6.4 — and will be flagged
+requires a new versioned topic per CONVENTIONS §6.4, and will be flagged
 here as breaking, which is the point.
 
 Usage: check_schema_compat.py <base-ref>   (e.g. origin/main or a merge-base SHA)
@@ -82,7 +82,7 @@ def main() -> int:
 
     schemas = sorted(SCHEMA_DIR.glob("*.schema.json"))
     if not schemas:
-        print(f"No schemas found under {SCHEMA_DIR} — refusing to pass an empty gate")
+        print(f"No schemas found under {SCHEMA_DIR}: refusing to pass an empty gate")
         return 1
 
     # Deleted schema files are breaking too.
@@ -99,7 +99,7 @@ def main() -> int:
         new = json.loads(schema_path.read_text())
         old = load_base(base_ref, schema_path)
         if old is None:
-            print(f"NEW    {schema_path.name} (no base version — allowed)")
+            print(f"NEW    {schema_path.name} (no base version; allowed)")
             continue
         errors = compare(old, new, schema_path.name)
         if errors:

@@ -11,7 +11,7 @@ import java.time.Duration;
 /**
  * RestClient used by the concierge tools to call catalog/booking. Timeouts are
  * deliberately tight (tools run inside an LLM turn) and configured on THIS
- * client only — the OpenAI client must keep its own, much longer, timeouts.
+ * client only; the OpenAI client must keep its own, much longer, timeouts.
  */
 @Configuration
 public class HttpConfig {

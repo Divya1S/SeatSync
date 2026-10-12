@@ -9,7 +9,12 @@ import { Router } from '@angular/router';
 import { Observable, catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
-const PUBLIC_AUTH_ENDPOINTS = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh'];
+const PUBLIC_AUTH_ENDPOINTS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/refresh',
+  '/api/auth/logout',
+];
 
 function isPublicAuthEndpoint(url: string): boolean {
   return PUBLIC_AUTH_ENDPOINTS.some((path) => url.includes(path));
@@ -48,7 +53,8 @@ function retryWithRefresh(
   return auth.refresh().pipe(
     switchMap((res) => next(withBearer(req, res.accessToken))),
     catchError((refreshError: unknown) => {
-      auth.logout(false);
+      // The refresh token is already dead: clear locally, do not call logout again.
+      auth.clearSession(false);
       router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
       return throwError(() => refreshError);
     }),

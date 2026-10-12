@@ -109,7 +109,7 @@ export function teardown(data) {
   const seats = JSON.parse(seatsRes.body).seats;
   const bookedCount = seats.filter((s) => s.status === "BOOKED").length;
   console.log(
-    `Final state: ${bookedCount} booked of ${data.allSeatIds.length} seats — oversell = ${
+    `Final state: ${bookedCount} booked of ${data.allSeatIds.length} seats; oversell = ${
       bookedCount > data.allSeatIds.length ? "YES (BUG!)" : "no"
     }`
   );

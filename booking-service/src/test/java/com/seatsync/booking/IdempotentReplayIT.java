@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Idempotent replay semantics (review #4): {@code bookings.hold_id} is UNIQUE,
- * so holdId is the natural idempotency key — a client retrying after a lost
+ * so holdId is the natural idempotency key: a client retrying after a lost
  * response gets its original result (200), never a scary 409; rivals keep
  * their 403/409.
  */

@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Graceful degradation: with Kafka bootstrap pointing at an unreachable address
- * (localhost:1), booking confirm must still return 201 quickly — the request
+ * (localhost:1), booking confirm must still return 201 quickly; the request
  * path never touches Kafka. The BookingConfirmed event is PARKED in the
  * transactional outbox (published_at NULL) instead of being lost; the relay
  * retries it until a broker accepts.
@@ -77,7 +77,7 @@ class KafkaDownGracefulIT {
              Statement statement = connection.createStatement()) {
             statement.execute("CREATE DATABASE " + ISOLATED_DB);
         } catch (SQLException e) {
-            // Already exists (context re-created in the same JVM) — fine.
+            // Already exists (context re-created in the same JVM); fine.
         }
     }
 

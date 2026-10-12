@@ -9,9 +9,11 @@ import com.seatsync.catalog.web.dto.PageResponse;
 import com.seatsync.catalog.web.dto.SeatMapResponse;
 import com.seatsync.catalog.web.dto.UpdateEventRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +31,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/catalog/events")
+@Validated
 public class EventController {
 
     private final EventService eventService;
@@ -39,9 +42,9 @@ public class EventController {
 
     @GetMapping
     public PageResponse<EventResponse> search(
-            @RequestParam(required = false) String q,
+            @RequestParam(required = false) @Size(max = 200) String q,
             @RequestParam(required = false) EventCategory category,
-            @RequestParam(required = false) String city,
+            @RequestParam(required = false) @Size(max = 100) String city,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @RequestParam(defaultValue = "0") int page,

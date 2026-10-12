@@ -62,7 +62,7 @@ import { ConciergeService } from '../../core/concierge.service';
                 @if (msg.escalatedToHuman) {
                   <div class="escalated">
                     <mat-icon inline>support_agent</mat-icon>
-                    This was escalated to a human — email
+                    This was escalated to a human. Email
                     <strong>support&#64;seatsync.local</strong> for help.
                   </div>
                 }

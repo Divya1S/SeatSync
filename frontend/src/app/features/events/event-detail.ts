@@ -92,10 +92,12 @@ import { SeatView, applySeatUpdate, buildSectionViews } from '../../core/seat-st
                     <span class="row-label">{{ row.label }}</span>
                     @for (seat of row.seats; track seat.seatId) {
                       <button
+                        type="button"
                         class="seat"
                         [class]="'seat ' + seat.ui"
                         [disabled]="seat.ui === 'held-other' || seat.ui === 'booked'"
                         [title]="seat.seatId + ' · $' + seat.price"
+                        [attr.aria-label]="seatLabel(seat)"
                         (click)="onSeatClick(seat)"
                       >
                         {{ seat.number }}
@@ -117,7 +119,7 @@ import { SeatView, applySeatUpdate, buildSectionViews } from '../../core/seat-st
               <mat-card-subtitle>Seat {{ hold.seatId }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-              <div class="countdown">{{ holdCountdown() }}</div>
+              <div class="countdown" role="timer" aria-label="Time left on your hold">{{ holdCountdown() }}</div>
               <p class="hint">Confirm before the timer runs out or the seat is released.</p>
             </mat-card-content>
             <mat-card-actions>
@@ -271,6 +273,19 @@ export class EventDetail {
     });
 
     this.destroyRef.onDestroy(() => this.socketSub?.unsubscribe());
+  }
+
+  /** Screen-reader text: the colour alone must not carry the seat's state. */
+  protected seatLabel(seat: SeatView): string {
+    const state =
+      seat.ui === 'available'
+        ? 'available'
+        : seat.ui === 'held-mine'
+          ? 'held by you'
+          : seat.ui === 'held-other'
+            ? 'held by someone else'
+            : 'booked';
+    return `Seat ${seat.seatId}, $${seat.price}, ${state}`;
   }
 
   protected onSeatClick(seat: SeatView): void {

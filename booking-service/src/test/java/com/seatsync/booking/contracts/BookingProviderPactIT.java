@@ -56,7 +56,7 @@ class BookingProviderPactIT extends AbstractBookingIT {
                 : DEFAULT_EVENT_ID;
 
         // Reset anything a previous test left behind for this event, then seed
-        // three AVAILABLE seats — no active holds, so an anonymous caller sees
+        // three AVAILABLE seats, no active holds, so an anonymous caller sees
         // status AVAILABLE and mine=false, as the pact's fixed examples show.
         jdbc.update("DELETE FROM holds WHERE event_id = ?", eventId);
         jdbc.update("DELETE FROM bookings WHERE event_id = ?", eventId);

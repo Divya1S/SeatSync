@@ -1,9 +1,12 @@
 server:
   port: 8085
+  shutdown: graceful
 
 spring:
   application:
     name: ai-concierge-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/seatsync_ai}
     username: ${SPRING_DATASOURCE_USERNAME:seatsync}
@@ -26,6 +29,10 @@ spring:
 concierge:
   catalog-base-url: ${CATALOG_BASE_URL:http://localhost:8082}
   booking-base-url: ${BOOKING_BASE_URL:http://localhost:8083}
+  memory:
+    # Conversations idle longer than this are forgotten; the store is capped too.
+    idle-ttl: ${CHAT_MEMORY_IDLE_TTL:PT30M}
+    max-conversations: ${CHAT_MEMORY_MAX_CONVERSATIONS:10000}
 
 seatsync:
   jwt:

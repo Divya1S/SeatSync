@@ -37,7 +37,7 @@ public class BookingController {
      * 201 for a fresh booking; 200 when an already-confirmed hold is replayed
      * (idempotent retry). An optional {@code Idempotency-Key} header replays the
      * stored outcome of an earlier identical request instead of re-executing
-     * (conventions 6.3) — including 4xx outcomes whose domain transaction rolled back.
+     * (conventions 6.3), including 4xx outcomes whose domain transaction rolled back.
      */
     @PostMapping
     public ResponseEntity<?> confirm(@Valid @RequestBody BookingRequest request,

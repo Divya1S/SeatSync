@@ -26,7 +26,7 @@ import static org.awaitility.Awaitility.await;
  * Atomic sweeper claim (review #5): two sweeps running concurrently (as two
  * replicas would) must divide the expired holds, never process one twice.
  * {@code FOR UPDATE SKIP LOCKED} + status flip in the claiming transaction is
- * the whole mechanism — no ShedLock, no leader. Exactly-once is proven by the
+ * the whole mechanism: no ShedLock, no leader. Exactly-once is proven by the
  * outbox: precisely ONE HoldExpired row per hold, no duplicates.
  */
 class SweeperClaimIT extends AbstractBookingIT {
@@ -78,7 +78,7 @@ class SweeperClaimIT extends AbstractBookingIT {
         pool.shutdownNow();
         assertThat(errors).isEmpty();
 
-        // Every hold ends EXPIRED with exactly ONE HoldExpired outbox row — the
+        // Every hold ends EXPIRED with exactly ONE HoldExpired outbox row; the
         // background scheduler may also have raced; the claim keeps it exactly-once.
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
             for (UUID holdId : holdIds) {

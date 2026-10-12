@@ -15,7 +15,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     List<Booking> findByUserIdOrderByConfirmedAtDesc(UUID userId);
 
-    /** hold_id is UNIQUE — at most one booking per hold (idempotent replay, section 6.3). */
+    /** hold_id is UNIQUE: at most one booking per hold (idempotent replay, section 6.3). */
     Optional<Booking> findByHoldId(UUID holdId);
 
     @Query("select coalesce(sum(b.price), 0) from Booking b where b.eventId = :eventId and b.status = :status")

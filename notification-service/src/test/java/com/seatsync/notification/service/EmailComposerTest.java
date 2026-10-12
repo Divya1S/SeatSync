@@ -82,6 +82,21 @@ class EmailComposerTest {
     }
 
     @Test
+    void blankOrMissingEventNameFallsBackToAGenericLabel() throws JsonProcessingException {
+        JsonNode blank = parse("""
+                {"type":"HoldExpired","holdId":"h-1","eventId":"%s","eventName":"",
+                 "seatId":"A-2-9","userEmail":"attendee@seatsync.local"}
+                """.formatted(EVENT_ID));
+        JsonNode missing = parse("""
+                {"type":"HoldExpired","holdId":"h-1","eventId":"%s",
+                 "seatId":"A-2-9","userEmail":"attendee@seatsync.local"}
+                """.formatted(EVENT_ID));
+
+        assertThat(composer.compose(blank).subject()).isEqualTo("Seat hold expired — your event, seat A-2-9");
+        assertThat(composer.compose(missing).subject()).isEqualTo("Seat hold expired — your event, seat A-2-9");
+    }
+
+    @Test
     void rejectsUnknownType() throws JsonProcessingException {
         JsonNode event = parse("""
                 {"type":"SomethingElse","userEmail":"a@b.c"}

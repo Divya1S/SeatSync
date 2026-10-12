@@ -1,59 +1,41 @@
-# Frontend
+# SeatSync frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
+Angular 21 single-page app (standalone components, signals, Angular Material)
+for browsing events, holding and booking seats on a live seat map, managing
+bookings, the organizer dashboard, and the AI concierge widget.
 
-## Development server
-
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Develop
 
 ```bash
-ng generate component component-name
+npm ci
+npm start          # http://localhost:4200, /api and /ws proxied to the gateway on :8080
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+`proxy.conf.json` forwards REST (`/api`) and the STOMP WebSocket (`/ws`) to the
+API gateway, so the backend stack (`docker compose up` at the repository root)
+must be running.
+
+## Test and build
 
 ```bash
-ng generate --help
+npm test           # Karma + Jasmine, ChromeHeadless
+npm run build      # production bundle in dist/frontend/browser (budgets: 800 kB warn, 1 MB error)
 ```
 
-## Building
+## Container
 
-To build the project run:
+`Dockerfile` builds the bundle and serves it with nginx (`nginx.conf`): SPA
+fallback to `index.html`, `/api/` and `/ws` proxied to `api-gateway:8080` with
+WebSocket upgrade headers, and baseline security headers.
 
-```bash
-ng build
-```
+## Where things live
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+| Path | Contents |
+|---|---|
+| `src/app/core/` | auth service + interceptor (bearer, single refresh-and-retry, logout), guards, typed API models, catalog/booking/concierge clients, STOMP socket service, pure seat-state and countdown helpers |
+| `src/app/features/` | lazy-loaded routes: events list and detail (live seat map), login/register, my bookings, organizer dashboard and event form, concierge widget |
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Seat states follow the convention in `docs/CONVENTIONS.md` §9: available
+(outlined), held by you (accent + countdown), held by others (greyed, disabled),
+booked (dark, disabled). Seat buttons carry `aria-label`s with the seat id,
+price and state so colour is never the only signal.

@@ -21,8 +21,8 @@ import static org.mockito.Mockito.verify;
 
 /**
  * The publishing half of the Redis WS fanout bridge (review #6): broadcasts go
- * to the Redis channel as {destination, payload} JSON — never to the local
- * broker directly — and a Redis failure never propagates to the caller.
+ * to the Redis channel as {destination, payload} JSON, never to the local
+ * broker directly, and a Redis failure never propagates to the caller.
  */
 @ExtendWith(MockitoExtension.class)
 class SeatEventBroadcasterTest {

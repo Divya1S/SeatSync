@@ -115,9 +115,39 @@ class AuthFlowIT {
         assertThat(reuse.getBody()).isNotNull();
         assertThat(reuse.getBody().get("status").asInt()).isEqualTo(401);
 
-        // the rotated refresh token still works exactly once more
-        ResponseEntity<JsonNode> secondRotation = postJson("/api/auth/refresh", Map.of("refreshToken", newRefreshToken));
-        assertThat(secondRotation.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // --- reuse of a revoked token revokes the WHOLE family (rotation guidance):
+        // the token that was legitimately issued by the rotation is now dead too ---
+        ResponseEntity<JsonNode> afterReuse = postJson("/api/auth/refresh", Map.of("refreshToken", newRefreshToken));
+        assertThat(afterReuse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        // the still-valid access token is unaffected (irrevocable for its 15-minute lifetime)
+        assertThat(getWithBearer("/api/auth/me", newAccessToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void logoutRevokesTheRefreshTokenAndIsAlwaysNoContent() {
+        ResponseEntity<JsonNode> login = postJson("/api/auth/login", Map.of(
+                "email", "attendee@seatsync.local",
+                "password", "attendee1!"));
+        assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String refreshToken = login.getBody().get("refreshToken").asText();
+        String accessToken = login.getBody().get("accessToken").asText();
+
+        // logout is public: the refresh token in the body is the credential
+        ResponseEntity<JsonNode> logout = postJson("/api/auth/logout", Map.of("refreshToken", refreshToken));
+        assertThat(logout.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        // the refresh token can no longer be exchanged
+        ResponseEntity<JsonNode> refresh = postJson("/api/auth/refresh", Map.of("refreshToken", refreshToken));
+        assertThat(refresh.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // a second logout, a garbage token, and an unknown token all answer 204 (no oracle)
+        assertThat(postJson("/api/auth/logout", Map.of("refreshToken", refreshToken)).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(postJson("/api/auth/logout", Map.of("refreshToken", "not.a.jwt")).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+
+        // access tokens are deliberately not revocable; they expire on their own
+        assertThat(getWithBearer("/api/auth/me", accessToken).getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test

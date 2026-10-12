@@ -64,7 +64,7 @@ public class SeatEventBroadcaster {
     public record Envelope(String destination, SeatMessage payload) {
     }
 
-    /** The STOMP message body — shape unchanged from the pre-bridge broadcasts. */
+    /** The STOMP message body; shape unchanged from the pre-bridge broadcasts. */
     public record SeatMessage(String eventId, String seatId, String status, String at) {
     }
 }

@@ -24,7 +24,7 @@ class ArchitectureTest {
                     .should().accessClassesThat().resideInAnyPackage("..repo..", "..repository..")
                     .because("the web edge must reach persistence only through the service layer (§8.1 rule 1)");
 
-    /** Rule 2: only DTOs at the edge — no JPA entities in or out of the api package. */
+    /** Rule 2: only DTOs at the edge: no JPA entities in or out of the api package. */
     @ArchTest
     static final ArchRule apiMustNotDependOnJpaEntities =
             noClasses().that().resideInAnyPackage("..api..", "..web..")

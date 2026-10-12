@@ -33,13 +33,13 @@ import static org.awaitility.Awaitility.await;
 
 /**
  * Chaos scenarios a-c (conventions 8.1): Redis cut mid-booking, a Redis latency
- * spike, and a Kafka outage — all injected through Toxiproxy while real HTTP
+ * spike, and a Kafka outage, all injected through Toxiproxy while real HTTP
  * requests run against the full stack. In every scenario availability may
  * degrade (recorded in the CHAOS-VERDICT line) but the no-oversell invariant
  * must hold.
  *
  * <p>Degradation profile of this context (noted per 8.1): the Lettuce command
- * timeout is capped at 4500ms ({@code spring.data.redis.timeout}) — the 60s
+ * timeout is capped at 4500ms ({@code spring.data.redis.timeout}); the 60s
  * default would park requests on a dead Redis for a minute; 4500ms keeps every
  * request bounded while still exceeding the 3000ms latency toxic so slow-Redis
  * requests complete rather than time out.
@@ -83,7 +83,7 @@ class ChaosToleranceIT extends AbstractChaosIT {
     }
 
     /**
-     * Scenario a — REDIS DOWN MID-BOOKING. Holds are taken while Redis is up,
+     * Scenario a: Redis down mid-booking. Holds are taken while Redis is up,
      * then the proxy is cut entirely. Confirms must STILL succeed: the DB is
      * authoritative and the Redis delete is a best-effort post-commit adjunct.
      * New holds during the outage must fail with a bounded, clean 5xx (the hold
@@ -144,7 +144,7 @@ class ChaosToleranceIT extends AbstractChaosIT {
                     .as("DB is authoritative: every valid hold confirms although Redis is dark")
                     .allMatch(s -> s == 201);
 
-            // A NEW hold during the outage: clean, bounded failure — never a hang.
+            // A NEW hold during the outage: clean, bounded failure, never a hang.
             String outageToken = TestTokens.attendee(UUID.randomUUID(), "redis-down-outage@test.io");
             long t0 = System.nanoTime();
             ResponseEntity<Map<String, Object>> outageHold = postJson("/api/holds",
@@ -180,7 +180,7 @@ class ChaosToleranceIT extends AbstractChaosIT {
     }
 
     /**
-     * Scenario b — REDIS 3s LATENCY SPIKE. A hold+confirm storm on 4 seats with
+     * Scenario b: Redis 3 s latency spike. A hold+confirm storm on 4 seats with
      * every Redis command delayed by 3000ms. All requests must complete
      * (bounded by the 4500ms Lettuce command timeout in this profile), exactly
      * one hold per seat wins, and nothing oversells.
@@ -251,9 +251,9 @@ class ChaosToleranceIT extends AbstractChaosIT {
     }
 
     /**
-     * Scenario c — KAFKA DOWN. Bookings must return 201 fast (the request path
+     * Scenario c: Kafka down. Bookings must return 201 fast (the request path
      * never touches Kafka), events are PARKED in the transactional outbox and
-     * retried, and after the broker returns EVERY row is delivered — nothing
+     * retried, and after the broker returns every row is delivered; nothing
      * lost. The 60s outage window is compressed to the ~10-15s it takes to
      * observe parked rows with retry attempts; the semantics are identical.
      */
@@ -328,6 +328,6 @@ class ChaosToleranceIT extends AbstractChaosIT {
                 capacity + "/" + capacity + " bookings returned 201 fast (slowest confirm "
                         + slowestConfirmMs + "ms) during a ~" + outageSeconds + "s broker outage; "
                         + "events parked in the outbox with retries, all " + capacity
-                        + " delivered after restore — nothing lost");
+                        + " delivered after restore; nothing lost");
     }
 }

@@ -53,7 +53,7 @@ const STATS_POLL_MS = 10_000;
       <div class="center"><mat-spinner diameter="48" /></div>
     } @else if (events().length === 0 && !formOpen()) {
       <mat-card appearance="outlined">
-        <mat-card-content>You have no events yet — create your first one.</mat-card-content>
+        <mat-card-content>You have no events yet. Create your first one.</mat-card-content>
       </mat-card>
     } @else {
       <table mat-table [dataSource]="events()" class="events-table">
@@ -112,7 +112,7 @@ const STATS_POLL_MS = 10_000;
 
     @if (salesEvent(); as ev) {
       <section class="sales-section">
-        <h2>Live sales — {{ ev.name }}</h2>
+        <h2>Live sales: {{ ev.name }}</h2>
         @if (stats(); as s) {
           <div class="stat-cards">
             <mat-card class="stat-card">

@@ -106,6 +106,8 @@ services:
       SERVER_PORT: "8083"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seatsync_booking
       CATALOG_BASE_URL: http://catalog-service:8082
+      # active holds one account may have on one event
+      MAX_ACTIVE_HOLDS_PER_USER: ${MAX_ACTIVE_HOLDS_PER_USER:-10}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -147,9 +149,14 @@ services:
     ports: ["8080:8080"]
     environment:
       <<: *java-env
-      # per-IP rate limiting knobs (requests/sec, burst) — raise for load testing
+      # per-IP rate limiting knobs (requests/sec, burst); raise for load testing
       RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-20}
       RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-40}
+      # the public chat endpoint costs model tokens per call: small budget
+      CHAT_RATE_LIMIT_REPLENISH: ${CHAT_RATE_LIMIT_REPLENISH:-2}
+      CHAT_RATE_LIMIT_BURST: ${CHAT_RATE_LIMIT_BURST:-5}
+      # comma-separated SPA origins allowed by the gateway (with credentials)
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
       AUTH_URI: http://auth-service:8081
       CATALOG_URI: http://catalog-service:8082
       BOOKING_URI: http://booking-service:8083

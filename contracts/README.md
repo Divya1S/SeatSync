@@ -12,7 +12,7 @@ known-good payloads (captured from the real outbox) used by CI.
    against the same schemas, so fixtures can't drift from reality.
 3. **CI `contracts` job**: validates schemas + examples on every push, and on
    pull requests runs `.github/scripts/check_schema_compat.py` against the
-   merge-base — **backward-incompatible changes fail the build**:
+   merge-base; **backward-incompatible changes fail the build**:
    removing a property, changing a property's `type`/`const`/`pattern`/
    `enum`/`format`, or adding to `required`. Adding optional properties is
    allowed.
@@ -28,4 +28,4 @@ known-good payloads (captured from the real outbox) used by CI.
 
 ## Why JSON Schema in-repo instead of Avro + Schema Registry
 
-See [docs/decisions.md](../docs/decisions.md#schema-contracts).
+See [docs/decisions.md](../docs/decisions.md#schema-contracts-json-schema-in-repo--ci-gate-not-avro--schema-registry).

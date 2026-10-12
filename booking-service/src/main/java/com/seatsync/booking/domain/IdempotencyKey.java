@@ -13,7 +13,7 @@ import java.util.UUID;
  * (conventions section 6.3). {@code responseStatus}/{@code responseBody} are NULL
  * while the original request is still in flight; once processing finishes with a
  * status below 500 they hold the exact response to replay. 5xx outcomes delete
- * the row instead — a retry must re-execute.
+ * the row instead: a retry must re-execute.
  *
  * <p>Rows are written via native/bulk queries only (the claim insert must be an
  * atomic {@code ON CONFLICT DO NOTHING}); this entity is read-only.

@@ -24,8 +24,8 @@ import java.util.UUID;
  * <p>Offline (no OpenAI key) the service short-circuits to the graceful
  * degradation shape. Online, the whole pipeline (query embedding for source
  * capture, RAG-advised LLM call, tool calls) runs inside the {@code llm}
- * circuit breaker: ANY runtime AI failure — bad key, provider down, open
- * breaker — falls back to the same graceful shape instead of a 500.
+ * circuit breaker: any runtime AI failure (bad key, provider down, open
+ * breaker) falls back to the same graceful shape instead of a 500.
  */
 @Service
 public class ConciergeService {

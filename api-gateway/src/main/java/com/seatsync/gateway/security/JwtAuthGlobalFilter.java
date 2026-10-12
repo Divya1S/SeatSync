@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  * token ({@code typ=access}). Failures produce an RFC 7807
  * {@code application/problem+json} 401 body (§5). On success the request is
  * forwarded with the {@code Authorization} header untouched (downstream
- * services re-validate — defense in depth).
+ * services re-validate; defense in depth).
  */
 @Component
 public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
@@ -45,6 +45,10 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
     public static final int ORDER = -100;
 
     private static final String BEARER_PREFIX = "Bearer ";
+    static final String ISSUER = "seatsync-auth";
+    /** The application.yml fallback; fine on a laptop, never in a shared deployment. */
+    static final String DEV_SECRET_PLACEHOLDER = "seatsync-dev-secret-change-me-0123456789abcdef";
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(JwtAuthGlobalFilter.class);
     private static final Pattern EVENT_SEATS_PATTERN = Pattern.compile("^/api/events/[^/]+/seats$");
 
     private final ObjectMapper objectMapper;
@@ -53,6 +57,10 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
     public JwtAuthGlobalFilter(ObjectMapper objectMapper, @Value("${jwt.secret}") String secret) {
         this.objectMapper = objectMapper;
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        if (DEV_SECRET_PLACEHOLDER.equals(secret)) {
+            log.warn("JWT_SECRET is the built-in development value; set a private secret before "
+                    + "exposing this gateway beyond localhost");
+        }
     }
 
     @Override
@@ -74,6 +82,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(key)
+                    .requireIssuer(ISSUER)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
@@ -92,7 +101,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
 
     /**
      * Public paths per CONVENTIONS §4, matched exactly:
-     * POST /api/auth/register|login|refresh, GET /api/catalog/**,
+     * POST /api/auth/register|login|refresh|logout, GET /api/catalog/**,
      * GET /api/events/*&#47;seats, /ws/**, POST /api/concierge/chat,
      * /actuator/health.
      */
@@ -107,6 +116,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
             return path.equals("/api/auth/register")
                     || path.equals("/api/auth/login")
                     || path.equals("/api/auth/refresh")
+                    || path.equals("/api/auth/logout")
                     || path.equals("/api/concierge/chat");
         }
         if (HttpMethod.GET.equals(method)) {

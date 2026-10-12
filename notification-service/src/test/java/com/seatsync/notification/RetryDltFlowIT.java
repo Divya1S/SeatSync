@@ -53,11 +53,11 @@ import static org.awaitility.Awaitility.await;
  * <p>(a) Transient path: SMTP unreachable → row FAILED, the record is
  * redelivered via the retry topics (4 total attempts, exponential 1s ×2) and
  * parks in {@code <topic>-dlt}; replaying the SAME messageId after fixing
- * SMTP flips the SAME row to SENT (FAILED-retry claim semantics — replay is
+ * SMTP flips the SAME row to SENT (FAILED-retry claim semantics; replay is
  * safe at any time).
  *
  * <p>(b) Poison path: garbage JSON goes straight to the DLT (classified
- * non-retryable — no retry-topic deliveries), and the listener stays alive
+ * non-retryable; no retry-topic deliveries), and the listener stays alive
  * for the next valid message.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -167,7 +167,7 @@ class RetryDltFlowIT {
                 .isEqualTo(NotificationStatus.FAILED);
         assertThat(greenMail.getReceivedMessages()).isEmpty();
 
-        // DLT replay: SMTP fixed, republish the SAME messageId — the FAILED
+        // DLT replay: SMTP fixed, republish the SAME messageId; the FAILED
         // claim is re-used and the SAME row flips to SENT, email delivered.
         kafkaTemplate.send(BOOKING_TOPIC, EVENT_ID, payload);
         await().atMost(TIMEOUT).untilAsserted(() -> {

@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Per-service JWT validation (defense in depth — the gateway also validates).
+ * Per-service JWT validation (defense in depth; the gateway also validates).
  * On a valid Bearer access token, populates the SecurityContext with a
  * {@link JwtUser} principal and {@code ROLE_<role>} authorities. Invalid or
  * missing tokens simply leave the context empty; the authorization rules and

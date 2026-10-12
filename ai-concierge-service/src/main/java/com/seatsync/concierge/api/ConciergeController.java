@@ -23,7 +23,7 @@ public class ConciergeController {
         this.ingestionService = ingestionService;
     }
 
-    /** Public (gateway rate-limits). Always 200 — degrades gracefully, never guesses. */
+    /** Public (gateway rate-limits). Always 200: degrades gracefully, never guesses. */
     @PostMapping("/chat")
     public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
         return conciergeService.chat(request.message(), request.conversationId());

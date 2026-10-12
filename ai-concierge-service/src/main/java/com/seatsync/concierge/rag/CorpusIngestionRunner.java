@@ -27,7 +27,7 @@ public class CorpusIngestionRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         if (!aiAvailability.enabled()) {
-            log.warn("OPENAI_API_KEY not configured — AI concierge runs in offline degradation mode, "
+            log.warn("OPENAI_API_KEY not configured; AI concierge runs in offline degradation mode, "
                     + "corpus ingestion skipped");
             return;
         }

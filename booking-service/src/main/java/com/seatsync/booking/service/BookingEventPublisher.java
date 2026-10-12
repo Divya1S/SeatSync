@@ -42,7 +42,7 @@ public class BookingEventPublisher {
         payload.put("messageId", messageId.toString());
         payload.put("bookingId", str(booking.getId()));
         payload.put("eventId", str(booking.getEventId()));
-        payload.put("eventName", booking.getEventName());
+        payload.put("eventName", nonBlank(booking.getEventName()));
         payload.put("seatId", booking.getSeatId());
         payload.put("userId", str(booking.getUserId()));
         payload.put("userEmail", booking.getUserEmail());
@@ -58,7 +58,7 @@ public class BookingEventPublisher {
         payload.put("messageId", messageId.toString());
         payload.put("holdId", str(hold.getId()));
         payload.put("eventId", str(hold.getEventId()));
-        payload.put("eventName", eventName);
+        payload.put("eventName", nonBlank(eventName));
         payload.put("seatId", hold.getSeatId());
         payload.put("userId", str(hold.getUserId()));
         payload.put("userEmail", hold.getUserEmail());
@@ -75,7 +75,7 @@ public class BookingEventPublisher {
         payload.put("messageId", messageId.toString());
         payload.put("holdId", str(holdId));
         payload.put("eventId", str(eventId));
-        payload.put("eventName", eventName);
+        payload.put("eventName", nonBlank(eventName));
         payload.put("seatId", seatId);
         payload.put("userId", str(userId));
         payload.put("userEmail", userEmail);
@@ -93,6 +93,11 @@ public class BookingEventPublisher {
             throw new IllegalStateException("Could not serialize outbox payload for " + topic, e);
         }
         outboxEventRepository.save(new OutboxEvent(messageId, topic, eventId.toString(), json, Instant.now()));
+    }
+
+    /** The schemas require eventName minLength 1; a blank name becomes the placeholder. */
+    private static String nonBlank(String eventName) {
+        return eventName == null || eventName.isBlank() ? EventNameResolver.UNKNOWN_EVENT_NAME : eventName;
     }
 
     private static String str(Object o) {

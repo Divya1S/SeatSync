@@ -132,6 +132,12 @@ export class MyBookings {
   }
 
   protected cancel(booking: Booking): void {
+    const confirmed = window.confirm(
+      `Cancel your booking for seat ${booking.seatId} at ${booking.eventName}? The seat is released to other attendees immediately.`,
+    );
+    if (!confirmed) {
+      return;
+    }
     this.booking.cancelBooking(booking.bookingId).subscribe({
       next: () => {
         this.snackBar.open(`Booking for seat ${booking.seatId} cancelled.`, 'OK', {

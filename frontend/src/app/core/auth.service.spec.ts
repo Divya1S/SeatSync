@@ -89,11 +89,17 @@ describe('AuthService', () => {
     expect(second).toBe('access-2');
   });
 
-  it('logout clears tokens, user signal and localStorage', () => {
+  it('logout revokes the refresh token server-side and clears tokens, user signal and localStorage', () => {
     service.login('a@b.c', 'pw').subscribe();
     httpMock.expectOne('/api/auth/login').flush(authResponse());
 
+    localStorage.setItem('seatsync.refreshToken', 'refresh-rotated-elsewhere');
+
     service.logout(false);
+
+    const revoke = httpMock.expectOne('/api/auth/logout');
+    expect(revoke.request.body).toEqual({ refreshToken: 'refresh-rotated-elsewhere' });
+    revoke.flush(null, { status: 204, statusText: 'No Content' });
 
     expect(service.accessToken).toBeNull();
     expect(service.refreshToken).toBeNull();
@@ -101,6 +107,18 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toBeFalse();
     expect(localStorage.getItem('seatsync.accessToken')).toBeNull();
     expect(localStorage.getItem('seatsync.user')).toBeNull();
+  });
+
+  it('refresh presents the refresh token rotated by another tab, not a stale in-memory copy', () => {
+    service.login('a@b.c', 'pw').subscribe();
+    httpMock.expectOne('/api/auth/login').flush(authResponse());
+    localStorage.setItem('seatsync.refreshToken', 'refresh-from-other-tab');
+
+    service.refresh().subscribe();
+
+    const req = httpMock.expectOne('/api/auth/refresh');
+    expect(req.request.body).toEqual({ refreshToken: 'refresh-from-other-tab' });
+    req.flush(authResponse({ accessToken: 'access-3', refreshToken: 'refresh-3' }));
   });
 
   it('restores the stored user on construction', () => {

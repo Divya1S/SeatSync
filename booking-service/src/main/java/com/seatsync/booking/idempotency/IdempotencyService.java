@@ -33,21 +33,21 @@ import java.util.function.Supplier;
  *   <li>no header: process normally, this class stays out of the way;</li>
  *   <li>key must be 1-255 chars, else 400;</li>
  *   <li>first request: atomically claim the key (committed BEFORE the domain work
- *       starts), process, then store the final status + body — including 4xx
- *       errors — in a transaction of its own;</li>
+ *       starts), process, then store the final status + body (including 4xx
+ *       errors) in a transaction of its own;</li>
  *   <li>replay (same key + same sha256 of the raw body): return the stored
  *       status/body untouched with {@code Idempotency-Replayed: true};</li>
  *   <li>same key + different body: 422;</li>
  *   <li>concurrent duplicate (claim exists, response not yet stored): 409
  *       "original request still in progress";</li>
- *   <li>5xx outcomes are never stored — the claim is deleted so a retry
+ *   <li>5xx outcomes are never stored: the claim is deleted so a retry
  *       re-executes.</li>
  * </ul>
  *
  * <p><b>Why the outcome survives domain rollbacks:</b> the claim insert and the
  * outcome update run in REQUIRES_NEW transactions ({@link IdempotencyKeyRepository}),
  * and the outcome is written only after the controller-invoked domain call has
- * completed — i.e. after the domain transaction has already committed or rolled
+ * completed, that is after the domain transaction has already committed or rolled
  * back. A 409 produced by a rolled-back confirm transaction is therefore still
  * recorded and replayed.
  */
@@ -131,7 +131,7 @@ public class IdempotencyService {
     /** Claim already exists: hash-check, then replay the stored outcome or report in-flight. */
     private ResponseEntity<?> replay(UUID userId, String endpoint, String idemKey, String requestHash) {
         // Fresh read in its own transaction; a vanished row means the original
-        // attempt ended 5xx and deleted its claim — retrying later is correct.
+        // attempt ended 5xx and deleted its claim; retrying later is correct.
         IdempotencyKey existing = repository.findByUserIdAndEndpointAndIdemKey(userId, endpoint, idemKey)
                 .orElseThrow(() -> ApiException.conflict(IN_PROGRESS_DETAIL));
         if (!existing.getRequestHash().equals(requestHash)) {

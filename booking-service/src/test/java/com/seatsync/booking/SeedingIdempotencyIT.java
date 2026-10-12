@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
  * Idempotent inventory seeding (review #7): the Redisson lock is a stampede
  * damper ONLY. Here the lock is mocked to be permanently unavailable (as after a lease
  * expiry / GC pause / Redis failover), so BOTH seeders run the seeding path
- * concurrently — per-row ON CONFLICT DO NOTHING must make them converge on the
+ * concurrently; per-row ON CONFLICT DO NOTHING must make them converge on the
  * exact seat count with no exception, instead of the old 500 on the unique
  * constraint.
  */
@@ -48,7 +48,7 @@ class SeedingIdempotencyIT extends AbstractBookingIT {
         when(catalogGateway.getEvent(eventId)).thenReturn(publishedEvent(eventId, "Seed Storm"));
         when(catalogGateway.getSeatMap(eventId)).thenReturn(seatMapOf(eventId, SEATS, new BigDecimal("20.00")));
 
-        // The "lock" can never be acquired — both seeders must proceed anyway.
+        // The "lock" can never be acquired; both seeders must proceed anyway.
         RLock deadLock = mock(RLock.class);
         when(redissonClient.getLock(anyString())).thenReturn(deadLock);
         when(deadLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);

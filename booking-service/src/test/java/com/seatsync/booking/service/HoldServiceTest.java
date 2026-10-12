@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
@@ -166,7 +167,7 @@ class HoldServiceTest {
     @Test
     void configuredHoldTtlDrivesBothRedisPxAndDbExpiresAt() {
         // A non-default booking.hold-ttl must flow into the Redis claim TTL (PX)
-        // AND the persisted expires_at — the two must never diverge.
+        // AND the persisted expires_at; the two must never diverge.
         Duration customTtl = Duration.ofSeconds(90);
         HoldService customService = new HoldService(inventoryService, seatInventoryRepository,
                 holdRepository, redisHoldStore, broadcaster,
@@ -257,6 +258,40 @@ class HoldServiceTest {
         assertThat(confirmed.getStatus()).isEqualTo(HoldStatus.CONFIRMED);
         verify(holdRepository, never()).save(any(Hold.class));
         verify(redisHoldStore, never()).release(any(), anyString());
+    }
+
+    @Test
+    void redisKeyIsReleasedWhenPersistingTheHoldFails() {
+        when(seatInventoryRepository.findByEventIdAndSeatId(eventId, seatId))
+                .thenReturn(Optional.of(availableSeat()));
+        when(redisHoldStore.tryClaim(eq(eventId), eq(seatId), any(), eq(user.id()), any(), eq(properties.holdTtl())))
+                .thenReturn(true);
+        when(holdRepository.save(any(Hold.class)))
+                .thenThrow(new DataAccessResourceFailureException("db down"));
+
+        assertThatThrownBy(() -> holdService.createHold(eventId, seatId, user))
+                .isInstanceOf(DataAccessResourceFailureException.class);
+
+        // Compensation: the claim must not outlive a hold that was never persisted.
+        verify(redisHoldStore).release(eventId, seatId);
+        verify(broadcaster, never()).seatHeld(any(), anyString());
+    }
+
+    @Test
+    void activeHoldLimitPerUserAndEventYields409BeforeAnyRedisClaim() {
+        when(seatInventoryRepository.findByEventIdAndSeatId(eventId, seatId))
+                .thenReturn(Optional.of(availableSeat()));
+        when(holdRepository.countByUserIdAndEventIdAndStatusAndExpiresAtAfter(
+                eq(user.id()), eq(eventId), eq(HoldStatus.HELD), any()))
+                .thenReturn((long) properties.maxActiveHoldsPerUser());
+
+        assertThatThrownBy(() -> holdService.createHold(eventId, seatId, user))
+                .isInstanceOfSatisfying(ApiException.class,
+                        e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT))
+                .hasMessageContaining("limit");
+
+        verify(redisHoldStore, never()).tryClaim(any(), anyString(), any(), any(), any(), any());
+        verify(holdRepository, never()).save(any(Hold.class));
     }
 
     private Hold heldBy(UUID holdId, UUID userId) {

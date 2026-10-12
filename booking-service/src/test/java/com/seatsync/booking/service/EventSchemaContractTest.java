@@ -81,6 +81,21 @@ class EventSchemaContractTest {
         assertValid(capturedPayload(), "waitlist-offered.schema.json");
     }
 
+    @Test
+    void blankEventNameIsReplacedSoThePayloadStillMatchesTheSchema() throws Exception {
+        Booking booking = new Booking(UUID.randomUUID(), "", "A-1-2",
+                UUID.randomUUID(), "attendee@seatsync.local", new BigDecimal("45.00"),
+                BookingStatus.CONFIRMED, Instant.now(), UUID.randomUUID());
+        ReflectionTestUtils.setField(booking, "id", UUID.randomUUID());
+
+        publisher.bookingConfirmed(booking);
+
+        String payload = capturedPayload();
+        assertThat(objectMapper.readTree(payload).path("eventName").asText())
+                .isEqualTo(EventNameResolver.UNKNOWN_EVENT_NAME);
+        assertValid(payload, "booking-confirmed.schema.json");
+    }
+
     private String capturedPayload() {
         ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
         verify(outboxRepo).save(captor.capture());
@@ -100,7 +115,7 @@ class EventSchemaContractTest {
 
         Set<ValidationMessage> errors = schema.validate(payload);
         assertThat(errors)
-                .as("payload must satisfy %s — payload was: %s", schemaFile, payloadJson)
+                .as("payload must satisfy %s; payload was: %s", schemaFile, payloadJson)
                 .isEmpty();
     }
 }

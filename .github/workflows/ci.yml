@@ -52,6 +52,12 @@ jobs:
       - name: Test
         working-directory: frontend
         run: npm test
+      # Advisory only: surfaces known-vulnerable transitive packages in the job log
+      # without blocking a merge on a registry advisory the lockfile cannot fix yet.
+      - name: Dependency audit (advisory)
+        working-directory: frontend
+        run: npm audit --audit-level=high
+        continue-on-error: true
       - name: Build
         working-directory: frontend
         run: npm run build

@@ -97,7 +97,7 @@ class IdempotencyKeyIT extends AbstractBookingIT {
         assertThat(first.getStatusCode().value()).isEqualTo(201);
 
         // Mutate the hold AFTER the confirm: any re-execution would now 409, and
-        // even the natural-key replay would answer 200 — only the idempotency
+        // even the natural-key replay would answer 200; only the idempotency
         // store can answer 201 with the original body.
         jdbc.update("update holds set status = 'EXPIRED' where id = ?", UUID.fromString(holdId));
 

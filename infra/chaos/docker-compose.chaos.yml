@@ -1,4 +1,4 @@
-# Chaos overlay for the kill-the-node test (docs/chaos-and-availability.md).
+# Chaos overlay for the kill-the-node test (docs/verification.md).
 #
 #   docker compose -f docker-compose.yml -f infra/chaos/docker-compose.chaos.yml \
 #     up -d --scale booking-service=2

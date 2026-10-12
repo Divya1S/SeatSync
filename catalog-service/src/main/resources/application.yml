@@ -1,9 +1,12 @@
 server:
   port: 8082
+  shutdown: graceful
 
 spring:
   application:
     name: catalog-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/seatsync_catalog}
     username: ${SPRING_DATASOURCE_USERNAME:seatsync}

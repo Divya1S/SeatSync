@@ -236,6 +236,16 @@ class CatalogServiceIT {
         assertEquals("Friday Night Jazz", seeded.get("name").asText());
         assertEquals("00000000-0000-0000-0000-000000000002", seeded.get("organizerId").asText());
 
+        // LIKE metacharacters in the free-text query are literals: a bare '%' or '_'
+        // must NOT match every event (the seeded names contain neither)
+        assertEquals(0, exchange(HttpMethod.GET, "/api/catalog/events?q=%", null, null)
+                .getBody().get("totalElements").asLong(), "'%' must not act as a wildcard");
+        assertEquals(0, exchange(HttpMethod.GET, "/api/catalog/events?q=_", null, null)
+                .getBody().get("totalElements").asLong(), "'_' must not act as a wildcard");
+        // and an over-long query is rejected cleanly rather than hitting the database
+        assertEquals(HttpStatus.BAD_REQUEST, exchange(HttpMethod.GET,
+                "/api/catalog/events?q=" + "a".repeat(201), null, null).getStatusCode());
+
         // health is public
         assertEquals(HttpStatus.OK,
                 exchange(HttpMethod.GET, "/actuator/health", null, null).getStatusCode());

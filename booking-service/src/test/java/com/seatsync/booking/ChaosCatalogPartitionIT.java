@@ -16,7 +16,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Chaos scenario e (conventions 8.1) — network PARTITION between booking and
+ * Chaos scenario e (conventions 8.1): network partition between booking and
  * catalog. Unlike every other IT, this context wires the REAL CatalogGateway
  * (OpenFeign + resilience4j, no MockitoBean): {@code catalog.base-url} points
  * at a blackholed Toxiproxy listener, so all catalog calls fail at the socket.
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Expected split-brain behavior: an event whose inventory was never seeded
  * cannot be booked (503 ProblemDetail "Event catalog temporarily unavailable"),
  * while events with seeded inventory keep booking normally throughout the
- * partition — the catalog is only needed for first-touch seeding.
+ * partition; the catalog is only needed for first-touch seeding.
  *
  * <p>Postgres/Redis/Kafka connect directly (unproxied) here: only the
  * booking-to-catalog link is partitioned.

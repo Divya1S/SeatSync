@@ -366,7 +366,7 @@
                   <element>BUNDLE</element>
                   <limits>
                     <!-- §8.1: honestly-measured merged unit+IT line coverage
-                         rounded DOWN to the nearest 5% — a ratchet, not a
+                         rounded DOWN to the nearest 5%, a ratchet, not a
                          target. Measured 2026-07-16: 86.81% line (783/902). -->
                     <limit>
                       <counter>LINE</counter>
@@ -423,11 +423,13 @@
               </outputFormats>
               <!-- §8.1: honestly-measured mutation score rounded DOWN to the
                    nearest 5 (never tuned up by excluding surviving mutants).
-                   Measured 2026-07-16: 51% (73/142 killed, default mutators,
-                   unit tests only; test strength 96% — the remaining
-                   no-coverage mutants live in IT-covered infrastructure code:
-                   InventoryService, OutboxRelay, SeatQueryService, ...). -->
-              <mutationThreshold>50</mutationThreshold>
+                   Measured 2026-07-16: 51% (73/142 killed; test strength 96%).
+                   Measured 2026-10-11 after the audit added unit tests for
+                   OutboxRelay, EventNameResolver, InventoryService and the
+                   sweeper: 72% (139/192 killed, default mutators, unit tests
+                   only; test strength 89%; 36 no-coverage mutants remain in
+                   IT-covered code such as SeatQueryService and RedisHoldStore). -->
+              <mutationThreshold>70</mutationThreshold>
             </configuration>
           </plugin>
         </plugins>

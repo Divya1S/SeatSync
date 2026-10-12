@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 /**
  * Claim-then-send unit tests (§6.5): the SENDING row is inserted BEFORE the
  * email leaves, and on a duplicate messageId the existing row's state drives
- * the outcome — SENT skip / FAILED retry / fresh SENDING skip / stale SENDING
+ * the outcome: SENT skip / FAILED retry / fresh SENDING skip / stale SENDING
  * retry. Transient send failures mark the row FAILED and THROW (feeding the
  * retry-topic machinery); poison payloads throw before any claim.
  */
@@ -86,7 +86,7 @@ class NotificationServiceTest {
 
     @Test
     void claimsSendingRowBeforeSendingThenMarksSent() {
-        // Snapshot the row's state at claim (insert) time — the same instance
+        // Snapshot the row's state at claim (insert) time; the same instance
         // is mutated to SENT after the send succeeds.
         List<NotificationStatus> statusAtClaim = new ArrayList<>();
         List<UUID> messageIdAtClaim = new ArrayList<>();

@@ -37,16 +37,16 @@ import java.util.UUID;
  *
  * <p>Provider states are shared by mandate across all consumers:
  * <ul>
- *   <li>{@code "published events exist"} — at least two PUBLISHED events with sections</li>
- *   <li>{@code "an event exists"} (param {@code eventId}) — one PUBLISHED event with sections
+ *   <li>{@code "published events exist"}: at least two PUBLISHED events with sections</li>
+ *   <li>{@code "an event exists"} (param {@code eventId}): one PUBLISHED event with sections
  *       under exactly that UUID, so both GET /api/catalog/events/{id} and
  *       GET /api/catalog/events/{id}/seatmap verify</li>
- *   <li>{@code "event does not exist"} (param {@code eventId}) — guaranteed absence</li>
+ *   <li>{@code "event does not exist"} (param {@code eventId}): guaranteed absence</li>
  * </ul>
  *
  * <p>Seeding uses native SQL: the entities generate their UUIDs ({@code @GeneratedValue}
  * + {@code @UuidGenerator}), so repository {@code save()} with a pre-assigned id would go
- * through {@code merge()} rather than a plain insert — direct SQL is the deterministic way
+ * through {@code merge()} rather than a plain insert; direct SQL is the deterministic way
  * to persist the EXACT event id a pact pins in its request path. Every state handler also
  * flushes the {@code catalog:*} Redis keys so no interaction is served a stale cached view
  * of a previous interaction's state.

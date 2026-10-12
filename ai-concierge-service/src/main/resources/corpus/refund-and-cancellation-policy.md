@@ -37,7 +37,7 @@ claim this refund.
 
 ## Holds and the waitlist are free
 
-Placing a 5-minute hold on a seat costs nothing — payment happens only when
+Placing a 5-minute hold on a seat costs nothing; payment happens only when
 you confirm the hold into a booking. If a hold expires or you release it, no
 money ever changes hands. Joining an event's waitlist is also completely free.
 

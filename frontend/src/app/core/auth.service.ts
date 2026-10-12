@@ -48,13 +48,17 @@ export class AuthService {
 
   /**
    * Exchanges the refresh token for a new token pair. Concurrent callers share
-   * a single in-flight request (the backend rotates + revokes on use).
+   * a single in-flight request (the backend rotates + revokes on use). The token
+   * is re-read from localStorage first so a rotation performed by another tab is
+   * honoured: presenting a superseded token is treated as reuse by the server and
+   * revokes the whole session family.
    */
   refresh(): Observable<AuthResponse> {
     if (this.refreshInFlight$) {
       return this.refreshInFlight$;
     }
-    const refreshToken = this.refreshTokenValue;
+    const refreshToken = readStored(REFRESH_TOKEN_KEY) ?? this.refreshTokenValue;
+    this.refreshTokenValue = refreshToken;
     this.refreshInFlight$ = this.http
       .post<AuthResponse>('/api/auth/refresh', { refreshToken })
       .pipe(
@@ -65,7 +69,21 @@ export class AuthService {
     return this.refreshInFlight$;
   }
 
+  /**
+   * Revokes the refresh token server-side (best effort, fire-and-forget) and then
+   * clears the local session. The access token stays valid until it expires.
+   */
   logout(redirect = true): void {
+    // Prefer the stored token: another tab may have rotated it since this one loaded.
+    const refreshToken = readStored(REFRESH_TOKEN_KEY) ?? this.refreshTokenValue;
+    if (refreshToken) {
+      this.http.post<void>('/api/auth/logout', { refreshToken }).subscribe({ error: () => undefined });
+    }
+    this.clearSession(redirect);
+  }
+
+  /** Drops the local session without contacting the server (the refresh token is already dead). */
+  clearSession(redirect = true): void {
     this.accessTokenValue = null;
     this.refreshTokenValue = null;
     this.user.set(null);
@@ -95,6 +113,15 @@ function readStoredUser(): UserProfile | null {
   try {
     const raw = localStorage.getItem(USER_KEY);
     return raw ? (JSON.parse(raw) as UserProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** localStorage can throw (private mode, blocked storage); treat that as absent. */
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
   } catch {
     return null;
   }

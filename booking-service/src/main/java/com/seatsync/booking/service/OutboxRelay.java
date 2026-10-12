@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seatsync.booking.domain.OutboxEvent;
 import com.seatsync.booking.repo.OutboxEventRepository;
+import org.apache.kafka.common.errors.NetworkException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,10 +21,16 @@ import java.util.concurrent.TimeUnit;
 /**
  * Publishes outbox rows to Kafka (conventions section 6.3). Each cycle claims a
  * batch of unpublished rows with {@code FOR UPDATE SKIP LOCKED} (safe under N
- * replicas — the claim IS the transaction, no lease to expire), sends each row
+ * replicas: the claim IS the transaction, no lease to expire), sends each row
  * with an ack wait, marks {@code published_at} on success and increments
  * {@code attempts} on failure, leaving the row for the next cycle. Delivery is
  * at-least-once; consumers dedupe on the payload's {@code messageId}.
+ *
+ * <p>Fail fast during an outage: the first send that times out because the
+ * broker is unreachable ends the cycle, with the attempt counted on every
+ * claimed row, instead of blocking up to {@code max.block.ms} per remaining row
+ * while holding row locks and a database connection. A row whose payload is
+ * unprocessable is skipped individually so it cannot block the rows behind it.
  *
  * <p>The HTTP request path never touches Kafka: a broker outage delays events,
  * it can no longer lose them.
@@ -56,7 +63,8 @@ public class OutboxRelay {
     @Transactional
     public void relay() {
         List<OutboxEvent> batch = outboxEventRepository.claimUnpublishedBatch(BATCH_SIZE);
-        for (OutboxEvent event : batch) {
+        for (int i = 0; i < batch.size(); i++) {
+            OutboxEvent event = batch.get(i);
             try {
                 Map<String, Object> payload = objectMapper.readValue(event.getPayload(),
                         new TypeReference<Map<String, Object>>() {
@@ -72,10 +80,33 @@ public class OutboxRelay {
                 break;
             } catch (Exception e) {
                 recordFailure(event, e);
+                if (brokerUnavailable(e)) {
+                    // Every remaining row would pay the same timeout; count the
+                    // attempt on each and let the next cycle retry the whole batch.
+                    for (OutboxEvent remaining : batch.subList(i + 1, batch.size())) {
+                        recordFailure(remaining, e);
+                    }
+                    break;
+                }
             }
         }
         // Claimed entities are managed; published_at/attempts flush at commit.
         purgeOldPublished();
+    }
+
+    /** Connectivity failures, as opposed to a problem with one specific record. */
+    static boolean brokerUnavailable(Throwable failure) {
+        for (Throwable t = failure; t != null; t = t.getCause()) {
+            if (t instanceof org.apache.kafka.common.errors.TimeoutException
+                    || t instanceof java.util.concurrent.TimeoutException
+                    || t instanceof NetworkException) {
+                return true;
+            }
+            if (t.getCause() == t) {
+                break;
+            }
+        }
+        return false;
     }
 
     private void recordFailure(OutboxEvent event, Exception e) {

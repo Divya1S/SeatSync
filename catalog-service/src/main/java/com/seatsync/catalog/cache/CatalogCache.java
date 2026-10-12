@@ -40,7 +40,7 @@ public class CatalogCache {
         this.objectMapper = objectMapper;
         this.enabled = enabled;
         if (!enabled) {
-            log.warn("Catalog cache-aside is DISABLED (catalog.cache.enabled=false) — all reads go to the database");
+            log.warn("Catalog cache-aside is DISABLED (catalog.cache.enabled=false); all reads go to the database");
         }
     }
 

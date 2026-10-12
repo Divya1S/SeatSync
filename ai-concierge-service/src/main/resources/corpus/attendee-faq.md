@@ -9,7 +9,7 @@ waitlist.
 ## How do I find events?
 
 Search by free text (event name or description), filter by city, or filter by
-category — CONCERT, WORKSHOP, SPORTS, CAMPUS or OTHER. Every event page shows
+category: CONCERT, WORKSHOP, SPORTS, CAMPUS or OTHER. Every event page shows
 the venue, its address, the start time in UTC and the price range. The
 concierge can also look up current events, event details and live seat
 availability for you.
@@ -29,18 +29,18 @@ The seat map updates live for everyone:
 Clicking a seat gives you an exclusive **5-minute hold**. Confirm within those
 5 minutes to pay and get the seat; otherwise the hold expires automatically
 and the seat goes back on sale (or to the waitlist if there is one). Holds are
-free — you pay only when you confirm.
+free; you pay only when you confirm.
 
 ## Can I buy several seats for a group?
 
-Yes. Hold each seat you want — you can have several active holds at once, each
-with its own 5-minute timer — then confirm each hold. Seats are identified by
+Yes. Hold each seat you want (you can have several active holds at once, each
+with its own 5-minute timer), then confirm each hold. Seats are identified by
 section-row-number (for example A-3-12), so pick adjacent numbers in the same
 row to sit together.
 
 ## Why did I get "seat is already held" or "Seat was just taken"?
 
-"Seat is already held" means someone beat you to the hold — only one active
+"Seat is already held" means someone beat you to the hold; only one active
 hold can exist per seat. "Seat was just taken" is rarer: it means the final
 availability check at confirmation found a conflict on that seat. In both
 cases you were not charged; pick another seat.
@@ -70,10 +70,10 @@ original payment method within 5–10 business days.
 ## Can I change my seat instead of cancelling?
 
 There is no direct seat-swap. Hold the new seat first, confirm it, then cancel
-the old booking — mind the refund windows above, since the cancellation is a
+the old booking; mind the refund windows above, since the cancellation is a
 normal cancellation.
 
-## I need accessible seating — what do I do?
+## I need accessible seating. What do I do?
 
 Book a row 1 seat and email support@seatsync.local with subject
 "Accessibility" at least 72 hours before the event. See the Accessibility and

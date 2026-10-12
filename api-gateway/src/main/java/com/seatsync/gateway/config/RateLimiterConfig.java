@@ -13,7 +13,7 @@ import java.net.InetSocketAddress;
  *
  * The RequestRateLimiter filter on the /api/** routes uses
  * RedisRateLimiter(replenishRate=20, burstCapacity=40) with this resolver.
- * Note: RedisRateLimiter FAILS OPEN by default — if Redis is unreachable the
+ * Note: RedisRateLimiter fails open by default: if Redis is unreachable the
  * Lua script call errors are swallowed and requests are allowed through.
  */
 @Configuration

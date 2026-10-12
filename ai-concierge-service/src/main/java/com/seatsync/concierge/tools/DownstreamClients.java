@@ -31,6 +31,8 @@ public class DownstreamClients {
 
     static final String TOOL_UNAVAILABLE_PREFIX = "TOOL_UNAVAILABLE: ";
     private static final int MAX_SEARCH_RESULTS = 5;
+    /** Organizer-written text is data for the model, not instructions; keep it short. */
+    static final int MAX_DESCRIPTION_CHARS = 300;
 
     private static final Logger log = LoggerFactory.getLogger(DownstreamClients.class);
 
@@ -78,18 +80,49 @@ public class DownstreamClients {
         return results.toString();
     }
 
-    /** Full event details from catalog, returned verbatim. */
+    /**
+     * Event details from catalog, compacted to the fields the model needs. Internal
+     * ids are dropped and the organizer-written description is truncated: tool
+     * output enters the model's context, so it must never be a verbatim relay of
+     * user-generated text.
+     */
     @CircuitBreaker(name = "downstream", fallbackMethod = "getEventDetailsUnavailable")
     public String getEventDetails(String eventId) {
+        JsonNode event;
         try {
-            return restClient.get()
+            event = restClient.get()
                     .uri(catalogBaseUrl + "/api/catalog/events/{id}", eventId)
                     .retrieve()
-                    .body(String.class);
+                    .body(JsonNode.class);
         } catch (HttpClientErrorException.NotFound notFound) {
-            // A 404 is an answer, not an outage — don't trip the breaker for it.
+            // A 404 is an answer, not an outage; do not trip the breaker for it.
             return "NOT_FOUND: no event exists with id " + eventId;
         }
+        if (event == null || event.isNull()) {
+            return "NOT_FOUND: no event exists with id " + eventId;
+        }
+        ObjectNode compact = objectMapper.createObjectNode();
+        compact.put("id", event.path("id").asText());
+        compact.put("name", event.path("name").asText());
+        compact.put("description", truncate(event.path("description").asText("")));
+        compact.put("category", event.path("category").asText());
+        compact.put("status", event.path("status").asText());
+        compact.put("startsAt", event.path("startsAt").asText());
+        compact.put("endsAt", event.path("endsAt").asText());
+        compact.put("totalSeats", event.path("totalSeats").asInt());
+        compact.put("priceFrom", event.path("priceFrom").asDouble());
+        compact.put("priceTo", event.path("priceTo").asDouble());
+        ObjectNode venue = compact.putObject("venue");
+        venue.put("name", event.path("venue").path("name").asText());
+        venue.put("city", event.path("venue").path("city").asText());
+        venue.put("address", event.path("venue").path("address").asText());
+        return compact.toString();
+    }
+
+    private static String truncate(String text) {
+        String normalized = text.replaceAll("\\s+", " ").trim();
+        return normalized.length() <= MAX_DESCRIPTION_CHARS
+                ? normalized : normalized.substring(0, MAX_DESCRIPTION_CHARS) + "…";
     }
 
     /** Booking seat view, summarized to counts by status. */

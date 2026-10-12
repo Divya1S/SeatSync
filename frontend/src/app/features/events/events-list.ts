@@ -83,7 +83,7 @@ const CATEGORIES: EventCategory[] = ['CONCERT', 'WORKSHOP', 'SPORTS', 'CAMPUS', 
     } @else if (error()) {
       <mat-card appearance="outlined" class="notice">
         <mat-card-content>
-          Could not load events — is the backend running? ({{ error() }})
+          Could not load events. Is the backend running? ({{ error() }})
         </mat-card-content>
       </mat-card>
     } @else if (page(); as p) {

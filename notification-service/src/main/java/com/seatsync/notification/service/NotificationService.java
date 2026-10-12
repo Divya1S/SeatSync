@@ -23,9 +23,9 @@ import java.util.UUID;
  * SENDING, message_id under a UNIQUE constraint) → send via SMTP → update the
  * row to SENT/FAILED → structured log.
  *
- * <p>The claim insert commits in its own transaction (the repository call —
+ * <p>The claim insert commits in its own transaction (the repository call;
  * this method is deliberately NOT transactional) BEFORE any email leaves.
- * On a unique-constraint conflict (redelivery — Kafka is at-least-once via
+ * On a unique-constraint conflict (redelivery; Kafka is at-least-once via
  * the outbox) the existing row decides the outcome:
  * <ul>
  *   <li><b>SENT</b> → skip (duplicate delivery, INFO log);</li>
@@ -77,14 +77,14 @@ public class NotificationService {
             messageId = messageIdOf(event);
             email = emailComposer.compose(event);
         } catch (JsonProcessingException | IllegalArgumentException e) {
-            log.warn("Poison notification event — routing to DLT without retries ({}): payload={}",
-                    e.getMessage(), abbreviate(rawPayload));
+            log.warn("Poison notification event; routing to DLT without retries ({}): payload={}",
+                    e.getMessage(), EmailMasker.maskAll(abbreviate(rawPayload)));
             throw new PoisonMessageException("Unprocessable notification payload: " + e.getMessage(), e);
         }
 
         Notification notification = claim(messageId, email);
         if (notification == null) {
-            return; // duplicate SENT delivery or concurrent in-flight claim — nothing to send
+            return; // duplicate SENT delivery or concurrent in-flight claim: nothing to send
         }
 
         try {
@@ -106,19 +106,19 @@ public class NotificationService {
             repository.save(notification);
         } catch (RuntimeException e) {
             // The email IS out. Throwing would redeliver and (once the claim
-            // goes stale) re-send — swallow instead; the send stays traceable
+            // goes stale) re-send. Swallow instead; the send stays traceable
             // in the log and the row stays SENDING.
             log.warn("Failed to update notification row to SENT: id={} type={} recipient={} error={}",
-                    notification.getId(), email.type(), email.recipient(), e.getMessage());
+                    notification.getId(), email.type(), EmailMasker.mask(email.recipient()), e.getMessage());
         }
 
         log.info("Notification sent: type={} recipient={} eventId={} seatId={} messageId={} subject=\"{}\"",
-                email.type(), email.recipient(), email.eventId(), email.seatId(), messageId,
+                email.type(), EmailMasker.mask(email.recipient()), email.eventId(), email.seatId(), messageId,
                 email.subject());
     }
 
     /**
-     * Inserts the SENDING row — the dedupe claim — in its own committed
+     * Inserts the SENDING row (the dedupe claim) in its own committed
      * transaction. On a unique-constraint conflict, applies the §6.5 claim
      * state machine against the existing row. Returns {@code null} if this
      * delivery must not send (already SENT, or another attempt is in flight).
@@ -136,7 +136,7 @@ public class NotificationService {
             Notification existing = messageId == null ? null
                     : repository.findByMessageId(messageId).orElse(null);
             if (existing == null) {
-                // Not the messageId dedupe claim (or the row vanished) —
+                // Not the messageId dedupe claim (or the row vanished):
                 // surface it; the record lands in the DLT and stays replayable.
                 throw e;
             }
@@ -155,24 +155,24 @@ public class NotificationService {
         switch (existing.getStatus()) {
             case SENT -> {
                 log.info("duplicate messageId {} skipped (already SENT): type={} recipient={} eventId={} seatId={}",
-                        messageId, email.type(), email.recipient(), email.eventId(), email.seatId());
+                        messageId, email.type(), EmailMasker.mask(email.recipient()), email.eventId(), email.seatId());
                 return null;
             }
             case FAILED -> {
                 log.info("retrying FAILED notification on redelivery: messageId={} type={} recipient={}",
-                        messageId, email.type(), email.recipient());
+                        messageId, email.type(), EmailMasker.mask(email.recipient()));
                 return reclaim(existing);
             }
             default -> { // SENDING
                 Instant lastTouched = existing.getUpdatedAt() != null ? existing.getUpdatedAt()
                         : existing.getCreatedAt();
                 if (lastTouched.isBefore(Instant.now().minus(STALE_CLAIM_AFTER))) {
-                    log.warn("stale SENDING claim (last touched {}) treated as crashed attempt — retrying: "
+                    log.warn("stale SENDING claim (last touched {}) treated as crashed attempt; retrying: "
                                     + "messageId={} type={} recipient={}",
-                            lastTouched, messageId, email.type(), email.recipient());
+                            lastTouched, messageId, email.type(), EmailMasker.mask(email.recipient()));
                     return reclaim(existing);
                 }
-                log.info("concurrent SENDING claim fresher than {} — skipping delivery: messageId={}",
+                log.info("concurrent SENDING claim fresher than {}; skipping delivery: messageId={}",
                         STALE_CLAIM_AFTER, messageId);
                 return null;
             }
@@ -187,7 +187,7 @@ public class NotificationService {
 
     private void markFailed(Notification notification, ComposedEmail email, Exception cause) {
         log.warn("Failed to send email: type={} recipient={} eventId={} seatId={} error={}",
-                email.type(), email.recipient(), email.eventId(), email.seatId(), cause.getMessage());
+                email.type(), EmailMasker.mask(email.recipient()), email.eventId(), email.seatId(), cause.getMessage());
         try {
             notification.setStatus(NotificationStatus.FAILED);
             repository.save(notification);
@@ -195,7 +195,7 @@ public class NotificationService {
             // Row stays SENDING; the claim goes stale after STALE_CLAIM_AFTER
             // and a later redelivery (retry topic or DLT replay) retries it.
             log.warn("Failed to record FAILED status: id={} type={} recipient={} error={}",
-                    notification.getId(), email.type(), email.recipient(), persistFailure.getMessage());
+                    notification.getId(), email.type(), EmailMasker.mask(email.recipient()), persistFailure.getMessage());
         }
     }
 
@@ -211,7 +211,7 @@ public class NotificationService {
         try {
             return UUID.fromString(raw);
         } catch (IllegalArgumentException e) {
-            log.warn("Ignoring malformed messageId \"{}\" — processing without dedupe", raw);
+            log.warn("Ignoring malformed messageId \"{}\"; processing without dedupe", raw);
             return null;
         }
     }

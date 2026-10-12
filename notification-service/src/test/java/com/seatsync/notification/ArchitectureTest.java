@@ -19,7 +19,7 @@ class ArchitectureTest {
     /**
      * Rule 1: the API edge must not touch persistence. Targets the repository
      * TYPE (any subtype of Spring Data's {@code Repository}) rather than a
-     * package name — this service keeps its JPA repository in {@code ..domain..},
+     * package name; this service keeps its JPA repository in {@code ..domain..},
      * so a package-based rule would silently miss it.
      */
     @ArchTest
@@ -30,7 +30,7 @@ class ArchitectureTest {
                     .because("controllers must go through a service, not read repositories directly"
                             + " (§8.1 rule 1)");
 
-    /** Rule 2: only DTOs at the edge — no {@code @Entity} types in the API layer. */
+    /** Rule 2: only DTOs at the edge: no {@code @Entity} types in the API layer. */
     @ArchTest
     static final ArchRule apiMustNotDependOnEntities =
             noClasses().that().resideInAnyPackage("..api..", "..web..")
@@ -49,7 +49,7 @@ class ArchitectureTest {
                             + " would be silently ignored (§8.1 rule 3)")
                     .allowEmptyShould(true);
 
-    /** Rule 4: services stay decoupled — no imports of other SeatSync services' packages. */
+    /** Rule 4: services stay decoupled: no imports of other SeatSync services' packages. */
     @ArchTest
     static final ArchRule noDependenciesOnOtherSeatSyncServices =
             noClasses().should().dependOnClassesThat().resideInAnyPackage(

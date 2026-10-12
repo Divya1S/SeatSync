@@ -25,8 +25,8 @@ import java.util.UUID;
 /**
  * Waitlist domain. A waitlist offer is a REAL hold (review #2): offering a
  * freed seat to the oldest entry creates a system hold owned by that user with
- * a {@code booking.offer-ttl} TTL (default 10 minutes) — Redis key plus a holds
- * row — so the seat is genuinely reserved while the offer stands. The offeree
+ * a {@code booking.offer-ttl} TTL (default 10 minutes), Redis key plus a holds
+ * row, so the seat is genuinely reserved while the offer stands. The offeree
  * confirms via the normal {@code POST /api/bookings {holdId}}; an ignored offer
  * expires through the standard sweeper, which cascades to the next entry.
  */
@@ -83,7 +83,7 @@ public class WaitlistService {
     /**
      * Offers a freed seat to the oldest waitlist entry for the event (if any):
      * creates a 10-minute offer-hold owned by that user, writes WaitlistOffered
-     * (incl. the holdId) to the outbox and removes the entry — all in the
+     * (incl. the holdId) to the outbox and removes the entry, all in the
      * caller's (sweeper/cancel) transaction. Redis claim and WS broadcast are
      * best-effort adjuncts deferred to after the commit.
      */
@@ -91,7 +91,7 @@ public class WaitlistService {
     public void offerSeat(UUID eventId, String seatId) {
         Optional<WaitlistEntry> oldest = waitlistEntryRepository.findFirstByEventIdOrderByCreatedAtAsc(eventId);
         if (oldest.isEmpty()) {
-            return; // cascade ends here — no infinite loop when the waitlist empties
+            return; // cascade ends here: no infinite loop when the waitlist empties
         }
         SeatInventory seat = seatInventoryRepository.findByEventIdAndSeatId(eventId, seatId).orElse(null);
         if (seat == null || seat.getStatus() != SeatStatus.AVAILABLE) {

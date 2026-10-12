@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Chaos scenario d (conventions 8.1) — POSTGRES POOL EXHAUSTED. This context
+ * Chaos scenario d (conventions 8.1): Postgres pool exhausted. This context
  * runs with a deliberately tiny Hikari pool (3 connections, 4s acquisition
  * timeout) while a 2000ms latency toxic sits on the Postgres proxy; 30
  * concurrent hold+confirm requests then fight over the pool. Many requests are

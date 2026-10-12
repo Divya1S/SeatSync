@@ -33,6 +33,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
+    static final String ISSUER = "seatsync-auth";
 
     private final SecretKey key;
 
@@ -48,6 +49,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             try {
                 Claims claims = Jwts.parser()
                         .verifyWith(key)
+                        .requireIssuer(ISSUER)
                         .build()
                         .parseSignedClaims(header.substring(BEARER_PREFIX.length()))
                         .getPayload();

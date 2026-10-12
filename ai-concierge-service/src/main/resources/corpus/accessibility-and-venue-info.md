@@ -10,7 +10,7 @@ Every event page shows its venue's name, city and street address. Seat maps
 are organized by section, row and seat number (seat IDs look like A-3-12:
 section A, row 3, seat 12). Row 1 of each section is the row closest to the
 stage or floor level and involves the fewest steps to reach. For live venue
-details on a specific event, ask the concierge or open the event page — the
+details on a specific event, ask the concierge or open the event page; the
 data comes straight from the event catalog.
 
 ## Wheelchair users and step-free access
@@ -54,12 +54,12 @@ usually recommended).
 
 If a properly requested accessibility arrangement (made at least 72 hours in
 advance) was not provided at the event, you are entitled to a **full 100%
-refund regardless of timing** — see the Refund and Cancellation Policy. Report
+refund regardless of timing**; see the Refund and Cancellation Policy. Report
 it to support@seatsync.local within 30 days of the event with your booking ID.
 
 ## Questions the concierge cannot answer
 
-Details that depend on the individual venue building — parking spaces, exact
-elevator locations, accessible restroom locations — are not stored in
+Details that depend on the individual venue building (parking spaces, exact
+elevator locations, accessible restroom locations) are not stored in
 SeatSync. For those, email support@seatsync.local and a human will check with
 the venue directly.

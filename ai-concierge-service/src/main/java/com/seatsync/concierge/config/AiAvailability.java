@@ -7,7 +7,7 @@ package com.seatsync.concierge.config;
  * variable: the AI is enabled only when the key is present, non-empty and not
  * the offline placeholder {@value #OFFLINE_PLACEHOLDER_KEY} that
  * application.yml falls back to. Without a real key the service still starts
- * and degrades gracefully — it never crashes for lack of a key.
+ * and degrades gracefully; it never crashes for lack of a key.
  */
 public record AiAvailability(boolean enabled) {
 

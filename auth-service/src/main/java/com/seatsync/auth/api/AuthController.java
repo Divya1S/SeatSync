@@ -42,6 +42,13 @@ public class AuthController {
         return authService.refresh(request);
     }
 
+    /** Public like refresh: possession of the refresh token is the credential. Always 204. */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
+        authService.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal JwtUser user) {
         return new UserResponse(user.id(), user.email(), user.name(), user.roles());

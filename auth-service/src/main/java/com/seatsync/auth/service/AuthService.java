@@ -16,6 +16,8 @@ import com.seatsync.auth.service.exception.InvalidRefreshTokenException;
 import com.seatsync.auth.service.exception.RoleNotAllowedException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,8 @@ import java.util.UUID;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private static final Set<String> SELF_REGISTER_ROLES = Set.of("ATTENDEE", "ORGANIZER");
 
@@ -89,7 +93,12 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    @Transactional
+    /**
+     * {@code noRollbackFor}: the family revocation performed on reuse detection must
+     * COMMIT even though the request still ends in a 401; a plain rollback would
+     * silently undo the one write that makes reuse detection worth anything.
+     */
+    @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
     public TokenResponse refresh(RefreshRequest request) {
         Claims claims;
         try {
@@ -102,7 +111,17 @@ public class AuthService {
         }
         RefreshToken stored = refreshTokenRepository.findByTokenHash(sha256Hex(request.refreshToken()))
                 .orElseThrow(InvalidRefreshTokenException::new);
-        if (stored.isRevoked() || stored.getExpiresAt().isBefore(Instant.now())) {
+        if (stored.isRevoked()) {
+            // A revoked token being presented again means either a stale client or a
+            // stolen token replayed after the legitimate rotation. Both are handled the
+            // same way (OAuth 2.0 refresh-token rotation guidance): revoke the whole
+            // family so the attacker's copy of the NEW token is useless too.
+            int revoked = refreshTokenRepository.revokeAllByUserId(stored.getUserId());
+            log.warn("Refresh token reuse detected for user {}: revoked {} live token(s)",
+                    stored.getUserId(), revoked);
+            throw new InvalidRefreshTokenException();
+        }
+        if (stored.getExpiresAt().isBefore(Instant.now())) {
             throw new InvalidRefreshTokenException();
         }
         User user = userRepository.findById(stored.getUserId())
@@ -111,6 +130,25 @@ public class AuthService {
         stored.revoke();
         refreshTokenRepository.save(stored);
         return issueTokens(user);
+    }
+
+    /**
+     * Revokes the presented refresh token so it can never be exchanged again. Always
+     * succeeds: a malformed, unknown or already-revoked token reveals nothing to the
+     * caller. Access tokens stay valid until they expire (15 min); revocation of
+     * access tokens would require per-request state, which is a documented trade-off.
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+        refreshTokenRepository.findByTokenHash(sha256Hex(refreshToken)).ifPresent(stored -> {
+            if (!stored.isRevoked()) {
+                stored.revoke();
+                refreshTokenRepository.save(stored);
+            }
+        });
     }
 
     private TokenResponse issueTokens(User user) {

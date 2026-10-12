@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * {@code catalog.base-url} pointed at the Pact mock server) wrapped in the
  * REAL {@link CatalogGateway}. The gateway is instantiated directly rather
  * than proxied, so its resilience4j {@code @Retry}/{@code @CircuitBreaker}
- * annotations are inert here — no breaker or retry interference with the
+ * annotations are inert here: no breaker or retry interference with the
  * mock-server matching. Data fields use type/regex matchers with FIXED
  * example values so the committed pact file regenerates byte-identically.
  *
@@ -87,7 +87,7 @@ class BookingCatalogPactTest {
     V4Pact publishedEventPact(PactDslWithProvider builder) {
         // Full §6.2 Event shape. Booking's EventDto only reads id/name/status;
         // status is pinned to PUBLISHED because inventory seeding refuses
-        // anything else — for this state the event MUST be published.
+        // anything else; for this state the event MUST be published.
         DslPart event = new PactDslJsonBody()
                 .uuid("id", EVENT_ID)
                 .stringType("name", "Friday Night Jazz")

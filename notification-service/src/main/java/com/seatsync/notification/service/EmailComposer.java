@@ -35,7 +35,10 @@ public class EmailComposer {
         if (recipient == null) {
             throw new IllegalArgumentException("Event payload has no 'userEmail' field");
         }
-        String eventName = event.path("eventName").asText("your event");
+        String eventName = textOrNull(event, "eventName");
+        if (eventName == null) {
+            eventName = "your event";
+        }
         String seatId = event.path("seatId").asText("");
         UUID eventId = uuidOrNull(event, "eventId");
 
