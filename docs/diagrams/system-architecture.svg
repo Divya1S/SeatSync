@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="790" viewBox="0 0 1200 790" font-family='Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<defs><marker id="arrow-475569" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker><marker id="arrow-15803d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d"/></marker></defs>
+<rect width="1200" height="790" fill="#ffffff"/>
+<text x="30" y="44" font-size="21" fill="#1f2937" font-weight="600">SeatSync system architecture</text>
+<text x="30" y="66" font-size="12.5" fill="#64748b">Six Spring Boot services behind a gateway, one Angular SPA, PostgreSQL, Redis and Kafka. The whole stack runs with docker compose up.</text>
+<rect x="430" y="96" width="340" height="58" rx="8" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.2"/>
+<text x="600.0" y="121.5" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Browser · Angular 21 SPA</text>
+<text x="600.0" y="138.5" font-size="11" fill="#1f2937" text-anchor="middle">served by nginx on :4200 · signals · Angular Material · STOMP over SockJS</text>
+<path d="M 600 154 L 600 200" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="612" y="181" font-size="10.5" fill="#64748b" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">REST /api/**  ·  WebSocket /ws</text>
+<rect x="430" y="200" width="340" height="74" rx="8" fill="#ecfeff" stroke="#67e8f9" stroke-width="1.2"/>
+<text x="600.0" y="226.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">api-gateway :8080</text>
+<text x="600.0" y="243.0" font-size="11" fill="#1f2937" text-anchor="middle">Spring Cloud Gateway (WebFlux)</text>
+<text x="600.0" y="258.0" font-size="11" fill="#1f2937" text-anchor="middle">edge JWT validation · per-IP rate limiting (Redis token buckets) · CORS</text>
+<rect x="985" y="200" width="180" height="74" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="1075.0" y="226.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Zipkin :9411</text>
+<text x="1075.0" y="243.0" font-size="11" fill="#1f2937" text-anchor="middle">traces from the gateway</text>
+<text x="1075.0" y="258.0" font-size="11" fill="#1f2937" text-anchor="middle">and every service</text>
+<path d="M 600 274 L 600 304" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 125.0 304 L 1075.0 304" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 125.0 304 L 125.0 340" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 362.5 304 L 362.5 340" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 600.0 304 L 600.0 340" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 837.5 304 L 837.5 340" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 1075.0 304 L 1075.0 340" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<rect x="35" y="340" width="180" height="118" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="125.0" y="373.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">ai-concierge-service</text>
+<text x="125.0" y="389.0" font-size="10.5" fill="#64748b" text-anchor="middle">:8085</text>
+<text x="125.0" y="406.0" font-size="10.5" fill="#1f2937" text-anchor="middle">Spring AI 1.1 · RAG over policy docs</text>
+<text x="125.0" y="420.0" font-size="10.5" fill="#1f2937" text-anchor="middle">tool calls into catalog and booking</text>
+<text x="125.0" y="434.0" font-size="10.5" fill="#1f2937" text-anchor="middle">offline mode without an API key</text>
+<rect x="272.5" y="340" width="180" height="118" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="362.5" y="380.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">catalog-service</text>
+<text x="362.5" y="396.0" font-size="10.5" fill="#64748b" text-anchor="middle">:8082</text>
+<text x="362.5" y="413.0" font-size="10.5" fill="#1f2937" text-anchor="middle">events · venues · derived seat maps</text>
+<text x="362.5" y="427.0" font-size="10.5" fill="#1f2937" text-anchor="middle">Redis cache-aside on hot reads</text>
+<rect x="510" y="340" width="180" height="118" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="600.0" y="373.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">booking-service</text>
+<text x="600.0" y="389.0" font-size="10.5" fill="#64748b" text-anchor="middle">:8083</text>
+<text x="600.0" y="406.0" font-size="10.5" fill="#1f2937" text-anchor="middle">5-minute holds · optimistic-lock confirm</text>
+<text x="600.0" y="420.0" font-size="10.5" fill="#1f2937" text-anchor="middle">waitlist · expiry sweeper · outbox relay</text>
+<text x="600.0" y="434.0" font-size="10.5" fill="#1f2937" text-anchor="middle">STOMP /ws live seat updates</text>
+<rect x="747.5" y="340" width="180" height="118" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="837.5" y="380.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">notification-service</text>
+<text x="837.5" y="396.0" font-size="10.5" fill="#64748b" text-anchor="middle">:8084</text>
+<text x="837.5" y="413.0" font-size="10.5" fill="#1f2937" text-anchor="middle">Kafka consumer → email</text>
+<text x="837.5" y="427.0" font-size="10.5" fill="#1f2937" text-anchor="middle">dedupe on messageId · retry topics · DLT</text>
+<rect x="985" y="340" width="180" height="118" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="1075.0" y="380.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">auth-service</text>
+<text x="1075.0" y="396.0" font-size="10.5" fill="#64748b" text-anchor="middle">:8081 (host 18081)</text>
+<text x="1075.0" y="413.0" font-size="10.5" fill="#1f2937" text-anchor="middle">register · login · refresh rotation · logout</text>
+<text x="1075.0" y="427.0" font-size="10.5" fill="#1f2937" text-anchor="middle">roles ATTENDEE · ORGANIZER · ADMIN</text>
+<path d="M 215 392 L 272.5 392" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="243.75" y="386" font-size="10" fill="#64748b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">REST</text>
+<path d="M 510 392 L 452.5 392" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="481.25" y="386" font-size="10" fill="#64748b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">REST</text>
+<path d="M 195 340 L 195 318 L 356.5 318 A 6 6 0 0 1 368.5 318 L 540 318 L 540 340" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="455" y="333" font-size="10" fill="#64748b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">REST tool calls (live availability)</text>
+<rect x="20" y="488" width="1160" height="102" rx="10" fill="#fffaf3" stroke="none" stroke-width="1.2"/>
+<text x="62" y="582" font-size="11.5" fill="#b45309" font-weight="600">PostgreSQL 16 · one database per service · Flyway migrations</text>
+<path d="M 125.0 458 L 125.0 512" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 60.0 519 A 65.0 7 0 0 1 190.0 519 L 190.0 553 A 65.0 7 0 0 1 60.0 553 Z" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<path d="M 60.0 519 A 65.0 7 0 0 0 190.0 519" fill="none" stroke="#fdba74" stroke-width="1.2"/>
+<text x="125.0" y="537" font-size="11.5" fill="#1f2937" font-weight="600" text-anchor="middle" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>seatsync_ai</text>
+<text x="125.0" y="551" font-size="10.5" fill="#64748b" text-anchor="middle">pgvector</text>
+<path d="M 362.5 458 L 362.5 512" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 297.5 519 A 65.0 7 0 0 1 427.5 519 L 427.5 553 A 65.0 7 0 0 1 297.5 553 Z" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<path d="M 297.5 519 A 65.0 7 0 0 0 427.5 519" fill="none" stroke="#fdba74" stroke-width="1.2"/>
+<text x="362.5" y="537" font-size="11.5" fill="#1f2937" font-weight="600" text-anchor="middle" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>seatsync_catalog</text>
+<path d="M 600.0 458 L 600.0 512" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 535.0 519 A 65.0 7 0 0 1 665.0 519 L 665.0 553 A 65.0 7 0 0 1 535.0 553 Z" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<path d="M 535.0 519 A 65.0 7 0 0 0 665.0 519" fill="none" stroke="#fdba74" stroke-width="1.2"/>
+<text x="600.0" y="537" font-size="11.5" fill="#1f2937" font-weight="600" text-anchor="middle" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>seatsync_booking</text>
+<path d="M 837.5 458 L 837.5 512" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 772.5 519 A 65.0 7 0 0 1 902.5 519 L 902.5 553 A 65.0 7 0 0 1 772.5 553 Z" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<path d="M 772.5 519 A 65.0 7 0 0 0 902.5 519" fill="none" stroke="#fdba74" stroke-width="1.2"/>
+<text x="837.5" y="537" font-size="11.5" fill="#1f2937" font-weight="600" text-anchor="middle" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>seatsync_notification</text>
+<path d="M 1075.0 458 L 1075.0 512" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 1010.0 519 A 65.0 7 0 0 1 1140.0 519 L 1140.0 553 A 65.0 7 0 0 1 1010.0 553 Z" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<path d="M 1010.0 519 A 65.0 7 0 0 0 1140.0 519" fill="none" stroke="#fdba74" stroke-width="1.2"/>
+<text x="1075.0" y="537" font-size="11.5" fill="#1f2937" font-weight="600" text-anchor="middle" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>seatsync_auth</text>
+<rect x="20" y="612" width="180" height="74" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="110.0" y="639.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">OpenAI API (optional)</text>
+<text x="110.0" y="656.0" font-size="10.5" fill="#1f2937" text-anchor="middle">chat + embeddings via Spring AI</text>
+<text x="110.0" y="670.0" font-size="10.5" fill="#1f2937" text-anchor="middle">offline mode without a key</text>
+<path d="M 47 458 L 47 612" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4" marker-end="url(#arrow-475569)"/>
+<rect x="350" y="612" width="230" height="74" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2"/>
+<text x="465.0" y="639.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Redis 7</text>
+<text x="465.0" y="656.0" font-size="10.5" fill="#1f2937" text-anchor="middle">seat holds (SET NX PX) · catalog cache-aside</text>
+<text x="465.0" y="670.0" font-size="10.5" fill="#1f2937" text-anchor="middle">rate-limit buckets · STOMP fan-out (pub/sub)</text>
+<path d="M 440.5 458 L 440.5 612" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 522 458 L 522 612" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<rect x="630" y="612" width="220" height="74" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+<text x="740.0" y="632.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Kafka 3.9 (KRaft)</text>
+<text x="740.0" y="649.0" font-size="10.5" fill="#1f2937" text-anchor="middle">booking.confirmed · hold.expired</text>
+<text x="740.0" y="663.0" font-size="10.5" fill="#1f2937" text-anchor="middle">waitlist.offered</text>
+<text x="740.0" y="677.0" font-size="10.5" fill="#1f2937" text-anchor="middle">3 partitions · key = eventId</text>
+<path d="M 678 458 L 678 612" fill="none" stroke="#15803d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-15803d)"/>
+<text x="666" y="601" font-size="10" fill="#64748b" text-anchor="end" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">outbox relay · every 2 s</text>
+<path d="M 759.5 612 L 759.5 458" fill="none" stroke="#15803d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-15803d)"/>
+<text x="765.5" y="601" font-size="10" fill="#64748b" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">consume</text>
+<rect x="890" y="612" width="150" height="74" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="965.0" y="639.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Mailpit :8025</text>
+<text x="965.0" y="656.0" font-size="10.5" fill="#1f2937" text-anchor="middle">SMTP sandbox</text>
+<text x="965.0" y="670.0" font-size="10.5" fill="#1f2937" text-anchor="middle">sent-email UI</text>
+<path d="M 915.5 458 L 915.5 612" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 30 726 L 70 726" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="80" y="730" font-size="11" fill="#64748b">synchronous REST or WebSocket</text>
+<path d="M 269.8 726 L 309.8 726" fill="none" stroke="#15803d" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-15803d)"/>
+<text x="319.8" y="730" font-size="11" fill="#64748b">asynchronous via Kafka (transactional outbox, at-least-once)</text>
+<path d="M 701.8 726 L 741.8 726" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4" marker-end="url(#arrow-475569)"/>
+<text x="751.8" y="730" font-size="11" fill="#64748b">optional external dependency</text>
+<text x="30" y="762" font-size="11" fill="#64748b">Each service owns its database and never imports another service&#x27;s code (enforced by ArchUnit). The shared contract is docs/CONVENTIONS.md, the JSON Schemas and the Pact files.</text>
+</svg>

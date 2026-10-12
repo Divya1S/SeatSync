@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470" font-family='Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<defs><marker id="arrow-475569" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker><marker id="arrow-64748b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker></defs>
+<rect width="1200" height="470" fill="#ffffff"/>
+<text x="30" y="44" font-size="21" fill="#1f2937" font-weight="600">How a seat sells at most once</text>
+<text x="30" y="66" font-size="12.5" fill="#64748b">Three independent layers. The last one alone guarantees correctness; the first two make contention cheap and holds authoritative.</text>
+<rect x="30" y="190" width="130" height="70" rx="8" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.2"/>
+<text x="95.0" y="213.0" font-size="11.5" fill="#1f2937" text-anchor="middle">N concurrent</text>
+<text x="95.0" y="229.0" font-size="11.5" fill="#1f2937" text-anchor="middle">requests for</text>
+<text x="95.0" y="245.0" font-size="11.5" fill="#1f2937" text-anchor="middle">one seat</text>
+<rect x="190" y="110" width="260" height="205" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="1.2"/>
+<path d="M 190 120 A 10 10 0 0 1 200 110 L 440 110 A 10 10 0 0 1 450 120 L 450 166 L 190 166 Z" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2"/>
+<text x="204" y="134" font-size="13.5" fill="#1f2937" font-weight="600">1 · Atomic hold claim</text>
+<text x="204" y="153" font-size="9.2" fill="#64748b" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>Redis: SET hold:{event}:{seat} NX PX 300000</text>
+<text x="204" y="190" font-size="11" fill="#1f2937">One winner per seat per 5-minute window.</text>
+<text x="204" y="206" font-size="11" fill="#1f2937">Losers get 409 in under a millisecond,</text>
+<text x="204" y="222" font-size="11" fill="#1f2937">before any database transaction opens.</text>
+<text x="204" y="238" font-size="11" fill="#1f2937"></text>
+<text x="204" y="246" font-size="11" fill="#1f2937">If Redis is down: new holds fail fast and</text>
+<text x="204" y="262" font-size="11" fill="#1f2937">clean; nothing below trusts the key.</text>
+<rect x="480" y="110" width="260" height="205" rx="8" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+<path d="M 480 120 A 10 10 0 0 1 490 110 L 730 110 A 10 10 0 0 1 740 120 L 740 166 L 480 166 Z" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<text x="494" y="134" font-size="13.5" fill="#1f2937" font-weight="600">2 · Authoritative hold row</text>
+<text x="494" y="153" font-size="9.2" fill="#64748b" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>PostgreSQL: holds (status, expires_at)</text>
+<text x="494" y="190" font-size="11" fill="#1f2937">Confirm re-reads owner, status and expiry</text>
+<text x="494" y="206" font-size="11" fill="#1f2937">from the row inside its own transaction.</text>
+<text x="494" y="222" font-size="11" fill="#1f2937">The Redis TTL is never consulted.</text>
+<text x="494" y="238" font-size="11" fill="#1f2937"></text>
+<text x="494" y="246" font-size="11" fill="#1f2937">A sweeper expires stale holds every 10 s</text>
+<text x="494" y="262" font-size="11" fill="#1f2937">(SKIP LOCKED claims, safe under replicas).</text>
+<rect x="770" y="110" width="260" height="205" rx="8" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+<path d="M 770 120 A 10 10 0 0 1 780 110 L 1020 110 A 10 10 0 0 1 1030 120 L 1030 166 L 770 166 Z" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<text x="784" y="134" font-size="13.5" fill="#1f2937" font-weight="600">3 · Optimistic lock on the seat</text>
+<text x="784" y="153" font-size="9.2" fill="#64748b" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>PostgreSQL: seat_inventory.version (@Version)</text>
+<text x="784" y="190" font-size="11" fill="#1f2937">UPDATE … WHERE version = n: exactly one</text>
+<text x="784" y="206" font-size="11" fill="#1f2937">concurrent transaction commits BOOKED.</text>
+<text x="784" y="222" font-size="11" fill="#1f2937">The other gets a clean 409, never a second sale.</text>
+<text x="784" y="238" font-size="11" fill="#1f2937"></text>
+<text x="784" y="246" font-size="11" fill="#1f2937">OptimisticLockGuardIT: 60 valid holds on</text>
+<text x="784" y="262" font-size="11" fill="#1f2937">one seat → exactly 1 booking.</text>
+<rect x="1060" y="190" width="110" height="70" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+<text x="1115.0" y="213.0" font-size="11.5" fill="#1f2937" text-anchor="middle">exactly</text>
+<text x="1115.0" y="229.0" font-size="11.5" fill="#1f2937" text-anchor="middle">1 BOOKED</text>
+<text x="1115.0" y="245.0" font-size="11.5" fill="#1f2937" text-anchor="middle">seat</text>
+<path d="M 160 225 L 190 225" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 450 225 L 480 225" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 740 225 L 770 225" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 1030 225 L 1060 225" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 320 315 L 320 341" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-64748b)"/>
+<text x="320" y="357" font-size="10.5" fill="#64748b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">losers: 409 in &lt; 1 ms</text>
+<path d="M 610 315 L 610 341" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-64748b)"/>
+<text x="610" y="357" font-size="10.5" fill="#64748b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">expired or released hold: 409</text>
+<path d="M 900 315 L 900 341" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-64748b)"/>
+<text x="900" y="357" font-size="10.5" fill="#64748b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">version conflict: 409</text>
+<text x="30" y="420" font-size="11" fill="#64748b">Measured: 60 threads against 10 seats → exactly 10 bookings and no 5xx (ConcurrentBookingRaceIT); 150 buyers against 44 seats → 44 bookings, 74 × 409, 0 oversold (k6 through the gateway).</text>
+</svg>

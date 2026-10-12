@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520" font-family='Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<defs><marker id="arrow-475569" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker></defs>
+<rect width="1100" height="520" fill="#ffffff"/>
+<text x="30" y="44" font-size="21" fill="#1f2937" font-weight="600">Seat lifecycle</text>
+<text x="30" y="66" font-size="12.5" fill="#64748b">Every transition that frees or books a seat writes an outbox row in the same transaction and broadcasts the new state over STOMP.</text>
+<rect x="60" y="200" width="160" height="60" rx="30" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="140.0" y="236" font-size="15" fill="#1f2937" font-weight="600" text-anchor="middle">AVAILABLE</text>
+<rect x="470" y="200" width="160" height="60" rx="30" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="550.0" y="236" font-size="15" fill="#1f2937" font-weight="600" text-anchor="middle">HELD</text>
+<rect x="880" y="200" width="160" height="60" rx="30" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="960.0" y="236" font-size="15" fill="#1f2937" font-weight="600" text-anchor="middle">BOOKED</text>
+<path d="M 220 218 L 470 218" fill="none" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="345" y="210" font-size="10.5" fill="#1f2937" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">POST /holds · SET NX + hold row, 5 min</text>
+<path d="M 630 218 L 880 218" fill="none" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="755" y="210" font-size="10.5" fill="#1f2937" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">POST /bookings · @Version commit</text>
+<path d="M 470 244 L 220 244" fill="none" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="345" y="262" font-size="10.5" fill="#1f2937" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">sweeper → EXPIRED after 5 min</text>
+<text x="345" y="277" font-size="10.5" fill="#1f2937" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">DELETE /holds/{id} → RELEASED</text>
+<path d="M 140 200 L 140 130 L 550 130 L 550 200" fill="none" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="345" y="124" font-size="10.5" fill="#1f2937" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">waitlist offer: a real 10-minute hold for the next person in line</text>
+<path d="M 960 260 L 960 330 L 140 330 L 140 260" fill="none" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="550" y="348" font-size="10.5" fill="#1f2937" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">DELETE /bookings/{id} → CANCELLED · seat freed · the first waitlist entry receives an offer hold</text>
+<rect x="60" y="390" width="980" height="92" rx="8" fill="#fefce8" stroke="#fde68a" stroke-width="1.2"/>
+<text x="550.0" y="422.5" font-size="11" fill="#1f2937" text-anchor="middle">seat_inventory.status is AVAILABLE or BOOKED. HELD is derived from an active hold row and mirrored by the Redis key.</text>
+<text x="550.0" y="439.5" font-size="11" fill="#1f2937" text-anchor="middle">Hold statuses: HELD → CONFIRMED | EXPIRED | RELEASED.   Booking statuses: CONFIRMED | CANCELLED.</text>
+<text x="550.0" y="456.5" font-size="11" fill="#1f2937" text-anchor="middle">Confirming a hold twice returns the original booking (200), so client retries are safe without a header.</text>
+</svg>

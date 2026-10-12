@@ -37,14 +37,7 @@ a single `docker compose up`.
 
 ## Architecture
 
-```
-Angular SPA ──REST/WS──▶ api-gateway (JWT at the edge, per-IP rate limit, CORS)
-                           ├─▶ auth-service          JWT access + refresh tokens, roles
-                           ├─▶ catalog-service       events, venues, seat maps, Redis cache-aside
-                           ├─▶ booking-service       holds → optimistic-lock confirm, waitlist, live seats
-                           │       └─ outbox ──▶ Kafka ──▶ notification-service ──▶ SMTP (Mailpit)
-                           └─▶ ai-concierge-service  Spring AI RAG (pgvector) + live tool calls
-```
+![SeatSync system architecture](docs/diagrams/system-architecture.svg)
 
 | Service | Port | Responsibility |
 |---|---|---|
@@ -60,9 +53,12 @@ Each service owns its own PostgreSQL database. Commands and queries are
 synchronous REST; facts that already happened travel over Kafka. Services never
 import each other's code (enforced by ArchUnit); they share only the
 conventions document, the JSON Schemas for events and the Pact contracts.
-Diagrams and sequence flows are in [docs/architecture.md](docs/architecture.md).
+Sequence flows, the seat lifecycle and the event pipeline are in
+[docs/architecture.md](docs/architecture.md).
 
 ## How overselling is prevented
+
+![Three layers behind the no-oversell invariant](docs/diagrams/oversell-guards.svg)
 
 A seat moves `AVAILABLE → held → BOOKED` behind three layers:
 
@@ -103,6 +99,8 @@ Each of these was exercised with Toxiproxy and a kill-the-node run; the
 measured results are in [docs/verification.md](docs/verification.md).
 
 ## AI concierge
+
+![AI concierge pipeline](docs/diagrams/concierge-pipeline.svg)
 
 The concierge answers questions such as "are there seats left for Friday Night
 Jazz?" or "what is the refund policy?". Answers come only from the platform's
@@ -212,6 +210,7 @@ docker-compose.yml         one-command local stack
 .env.example               every environment variable with its default
 contracts/                 JSON Schemas for Kafka events and Pact files for REST edges
 docs/                      architecture, conventions, decisions, verification, runbook, reviews
+docs/diagrams/             SVG diagrams and the script that generates them
 infra/postgres/            per-service database bootstrap
 infra/k6/                  load-test scripts
 infra/chaos/               compose overlay and kill-the-node script

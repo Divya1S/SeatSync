@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="600" viewBox="0 0 1100 600" font-family='Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<defs><marker id="arrow-475569" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker></defs>
+<rect width="1100" height="600" fill="#ffffff"/>
+<text x="30" y="44" font-size="21" fill="#1f2937" font-weight="600">Chaos harness: availability may degrade, correctness may not</text>
+<text x="30" y="66" font-size="12.5" fill="#64748b">booking-service reaches every dependency through Toxiproxy; each scenario injects a failure and then checks the oversell invariant.</text>
+<rect x="430" y="240" width="240" height="110" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="550.0" y="278.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">booking-service under test</text>
+<text x="550.0" y="295.0" font-size="10.5" fill="#1f2937" text-anchor="middle">real Spring Boot context (Testcontainers)</text>
+<text x="550.0" y="309.0" font-size="10.5" fill="#1f2937" text-anchor="middle">every connection goes through a</text>
+<text x="550.0" y="323.0" font-size="10.5" fill="#1f2937" text-anchor="middle">Toxiproxy listener</text>
+<rect x="725" y="80" width="350" height="420" rx="10" fill="#fcfcfd" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="737" y="98" font-size="11.5" fill="#64748b" font-weight="600">Toxiproxy scenarios</text>
+<text x="737" y="492" font-size="9.5" fill="#64748b">ChaosToleranceIT · ChaosPoolExhaustionIT · ChaosCatalogPartitionIT</text>
+<rect x="745" y="120" width="100" height="44" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="795.0" y="145.0" font-size="11" fill="#1f2937" font-weight="600" text-anchor="middle">proxy</text>
+<rect x="875" y="110" width="180" height="64" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2"/>
+<text x="965.0" y="132.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Redis</text>
+<text x="965.0" y="149.0" font-size="10.5" fill="#1f2937" text-anchor="middle">down mid-booking</text>
+<text x="965.0" y="163.0" font-size="10.5" fill="#1f2937" text-anchor="middle">+3 s latency on every call</text>
+<path d="M 670 295 L 745 142" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 845 142 L 875 142" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<rect x="745" y="220" width="100" height="44" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="795.0" y="245.0" font-size="11" fill="#1f2937" font-weight="600" text-anchor="middle">proxy</text>
+<rect x="875" y="210" width="180" height="64" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+<text x="965.0" y="232.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Kafka</text>
+<text x="965.0" y="249.0" font-size="10.5" fill="#1f2937" text-anchor="middle">broker down through</text>
+<text x="965.0" y="263.0" font-size="10.5" fill="#1f2937" text-anchor="middle">a sales window</text>
+<path d="M 670 295 L 745 242" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 845 242 L 875 242" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<rect x="745" y="320" width="100" height="44" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="795.0" y="345.0" font-size="11" fill="#1f2937" font-weight="600" text-anchor="middle">proxy</text>
+<rect x="875" y="310" width="180" height="64" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/>
+<text x="965.0" y="332.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">PostgreSQL</text>
+<text x="965.0" y="349.0" font-size="10.5" fill="#1f2937" text-anchor="middle">+2 s latency · pool of 3</text>
+<text x="965.0" y="363.0" font-size="10.5" fill="#1f2937" text-anchor="middle">30 concurrent buyers</text>
+<path d="M 670 295 L 745 342" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 845 342 L 875 342" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<rect x="745" y="420" width="100" height="44" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="795.0" y="445.0" font-size="11" fill="#1f2937" font-weight="600" text-anchor="middle">proxy</text>
+<rect x="875" y="410" width="180" height="64" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="965.0" y="432.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">catalog-service</text>
+<text x="965.0" y="449.0" font-size="10.5" fill="#1f2937" text-anchor="middle">blackholed listener</text>
+<text x="965.0" y="463.0" font-size="10.5" fill="#1f2937" text-anchor="middle">(network partition)</text>
+<path d="M 670 295 L 745 442" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<path d="M 845 442 L 875 442" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<rect x="40" y="240" width="300" height="110" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="190.0" y="278.0" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Kill-the-node (live Compose stack)</text>
+<text x="190.0" y="295.0" font-size="10.5" fill="#1f2937" text-anchor="middle">two booking replicas, 12 users storming a 66-seat event</text>
+<text x="190.0" y="309.0" font-size="10.5" fill="#1f2937" text-anchor="middle">SIGKILL one replica at t+6 s of 30 s</text>
+<text x="190.0" y="323.0" font-size="10.5" fill="#1f2937" text-anchor="middle">survivor sweeps orphaned holds and drains the outbox</text>
+<path d="M 340 295 L 430 295" fill="none" stroke="#475569" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4" marker-end="url(#arrow-475569)"/>
+<text x="385" y="287" font-size="10" fill="#64748b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">infra/chaos</text>
+<rect x="40" y="500" width="1035" height="80" rx="8" fill="#fefce8" stroke="#fde68a" stroke-width="1.2"/>
+<text x="557.5" y="536.5" font-size="13" fill="#1f2937" font-weight="600" text-anchor="middle">Asserted after every scenario</text>
+<text x="557.5" y="553.5" font-size="11" fill="#1f2937" text-anchor="middle">no (event_id, seat_id) with two CONFIRMED bookings · bookings never exceed capacity · failures are fast and bounded (no hangs) · recovery without a restart</text>
+<text x="557" y="568" font-size="9.5" fill="#64748b" text-anchor="middle" font-family='SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'>SELECT event_id, seat_id FROM bookings WHERE status = &#x27;CONFIRMED&#x27; GROUP BY event_id, seat_id HAVING count(*) &gt; 1  →  0 rows</text>
+<path d="M 550 350 L 550 500" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-475569)"/>
+<text x="556" y="430" font-size="10" fill="#64748b" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">oversell check</text>
+</svg>

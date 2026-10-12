@@ -20,6 +20,8 @@ Three harnesses exercise this contract:
 3. **k6 load tests** (`infra/k6/`; manual, against the live Compose stack
    through the gateway).
 
+![Chaos harness](diagrams/chaos-harness.svg)
+
 ## 1. Failure matrix (measured)
 
 | Failure injected | Availability impact (measured, tolerated) | Correctness (asserted) |

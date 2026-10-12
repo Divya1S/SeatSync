@@ -17,6 +17,8 @@ and go straight to the DLT. The original payload is preserved; the failure
 cause travels in Kafka headers (`kafka_dlt-exception-message`,
 `kafka_dlt-original-topic`, `kafka_dlt-original-offset`).
 
+![Event pipeline, retry topics and the DLT](diagrams/event-pipeline.svg)
+
 ## 1. Inspect
 
 ```bash
